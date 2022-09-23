@@ -59,9 +59,9 @@ for b in mile_binary:
 
             # Create new labels for hue when graphing bars
             if (c in ['choice']):
-                df_dict_c_nc[str(r)+c]['Area type'] = "At least another hospital"
+                df_dict_c_nc[str(r)+c]['Area type'] = "Both hospital types in area"
             if (c in ['nochoice']):
-                df_dict_c_nc[str(r)+c]['Area type'] = "No other hospitals"
+                df_dict_c_nc[str(r)+c]['Area type'] = "No other hospitals in area"
 
             # Append df name to list
             df_list_c_nc.append(df_dict_c_nc[str(r) + c])
@@ -115,7 +115,7 @@ for b in mile_binary:
     legend1 = plt.legend(handles=[c1, c2, c3, c4],
               labels=['BLS to Non-trauma','BLS to Lvl 1','ALS to Non-trauma','ALS to Lvl 1'],
               ncol=1, handletextpad=0.5, handlelength=1.0, columnspacing=-0.5,
-              fontsize='small', loc="best",title=None, frameon=False)
+              fontsize='small',bbox_to_anchor=(1, 1), loc=2, borderaxespad=0,title=None, frameon=False)
 
     sns.despine()  # Trim off the edges that are not the axis
 
@@ -180,10 +180,10 @@ for b in mile_binary:
 
     #___ Manually create x labels ___#
 
-    plt.text(-0.23, -2, "At least \nanother hospital", horizontalalignment='center', size='medium', color='black')
-    plt.text(0.20, -2, "No other \nhospitals", horizontalalignment='center', size='medium', color='black')
-    plt.text(.77, -2, "At least \nanother hospital", horizontalalignment='center', size='medium', color='black')
-    plt.text(1.20, -2, "No other \nhospitals", horizontalalignment='center', size='medium', color='black')
+    plt.text(-0.23, -2, "Both hospital \ntypes in area", horizontalalignment='center', size='medium', color='black')
+    plt.text(0.20, -2, "No other \nhospitals in area", horizontalalignment='center', size='medium', color='black')
+    plt.text(.77, -2, "Both hospital \ntypes in area", horizontalalignment='center', size='medium', color='black')
+    plt.text(1.20, -2, "No other \nhospitals in area", horizontalalignment='center', size='medium', color='black')
 
     plt.text(0, -3.2, "Radius = 3 miles", horizontalalignment='center', size='medium', color='black')
     plt.text(0.99, -3.2, "Radius = 5 miles", horizontalalignment='center', size='medium', color='black')
@@ -404,8 +404,8 @@ plt.axvline(x=nochoice_mean_pop,ymin=0,ymax=1,color='cornflowerblue',zorder=1)
 
 plt.xlabel('Population (county)')  # x label
 plt.ylabel('Percent')  # y label
-legend_elements = [Patch(facecolor='coral', edgecolor='orangered', label='At least another hospital',alpha=0.8),
-                   Patch(facecolor='cornflowerblue', edgecolor='royalblue', label='No other hospitals',alpha=0.8)]
+legend_elements = [Patch(facecolor='coral', edgecolor='orangered', label='Both hospital types in area',alpha=0.8),
+                   Patch(facecolor='cornflowerblue', edgecolor='royalblue', label='No other hospitals in area',alpha=0.8)]
 plt.legend(handles=legend_elements, fontsize='small', loc='upper right', title=None,frameon=False)
 
 sns.despine()  # Trim off the edges that are not the axis
@@ -425,7 +425,7 @@ for mi_n in mi_n:
     nochoice_mean_traf = concat_df[(concat_df[f'only_hos_at_mi{mi_n}']==1)&(concat_df['TRAUMA_LEVEL'].isin(['1','NT']))][f'PTRAF_dist{mi_n}'].mean() # 3 mile radius
 
     # Plot graph and text to display mean (choice/nochoice AND traffic proximity at 3 mile radius) (Note: i see that as we shorten radius of traffic proximity, we may see higher. Note that these are averages so the larger the radius, the more blocks that have smaller traffic are considered in the average so the average may go down)
-    sns.histplot(data=concat_df[(concat_df[f'choice_ind_mi{mi_n}']==1)&(concat_df['TRAUMA_LEVEL'].isin(['1','NT']))],x=f'PTRAF_dist{mi_n}',alpha=0.8,zorder=0,stat='percent',color='coral',edgecolor='orangered',bins=40).annotate('Mean', xy=(choice_mean_traf, 15.5), xytext=(choice_mean_traf+500, 18.5),arrowprops=dict(facecolor='coral', edgecolor='orangered'))
+    sns.histplot(data=concat_df[(concat_df[f'choice_ind_mi{mi_n}']==1)&(concat_df['TRAUMA_LEVEL'].isin(['1','NT']))],x=f'PTRAF_dist{mi_n}',alpha=0.8,zorder=0,stat='percent',color='coral',edgecolor='orangered',bins=40).annotate('Mean', xy=(choice_mean_traf, 15.5), xytext=(choice_mean_traf+450, 18.5),arrowprops=dict(facecolor='coral', edgecolor='orangered'))
     if mi_n in [5]:
         sns.histplot(data=concat_df[(concat_df[f'only_hos_at_mi{mi_n}']==1)&(concat_df['TRAUMA_LEVEL'].isin(['1','NT']))],x=f'PTRAF_dist{mi_n}',alpha=0.8,zorder=1,stat='percent',color='cornflowerblue',edgecolor='royalblue',bins=20).annotate(' ', xy=(nochoice_mean_traf, 15.5), xytext=(nochoice_mean_traf+1700, 18.5),arrowprops=dict(facecolor='cornflowerblue', edgecolor='royalblue'))
     else:
@@ -437,8 +437,8 @@ for mi_n in mi_n:
 
     plt.xlabel(f'Traffic proximity ({mi_n}-mile radius)')  # x label
     plt.ylabel('Percent')  # y label
-    legend_elements = [Patch(facecolor='coral', edgecolor='orangered', label='At least another hospital',alpha=0.8),
-                       Patch(facecolor='cornflowerblue', edgecolor='royalblue', label='No other hospitals',alpha=0.8)]
+    legend_elements = [Patch(facecolor='coral', edgecolor='orangered', label='Both hospital types in area',alpha=0.8),
+                       Patch(facecolor='cornflowerblue', edgecolor='royalblue', label='No other hospitals in area',alpha=0.8)]
     plt.legend(handles=legend_elements, fontsize='small', loc='upper right', title=None,frameon=False)
 
     sns.despine()  # Trim off the edges that are not the axis

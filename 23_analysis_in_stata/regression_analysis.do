@@ -7,8 +7,8 @@
 
 quietly{ /* Suppress outputs */
 
-Overview: We examined the interaction effects of hospital type (level 1 trauma center vs non-trauma center) and ambulance
-type (ALS vs BLS) on 30-day mortality.
+/*Overview: We examined the interaction effects of hospital type (level 1 trauma center vs non-trauma center) and ambulance
+type (ALS vs BLS) on 30-day mortality.*/
 
 * Place in terminal to run script
 * do /mnt/labshares/sanghavi-lab/Jessy/hpc_utils/codes/python/trauma_center_project/final_regression_analysis_paper_two/23_analysis_in_stata/regression_analysis.do
@@ -385,7 +385,7 @@ foreach p of local panel_list{
                 if inlist("`p'","panel_b"){
 
                     * Logit regression
-                    logit thirty_day_death_ind i.treatment ib1.amb_type i.mile`b'_binary_w_radius`m' niss1-niss4 riss1-riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
+                    logit thirty_day_death_ind i.treatment##ib1.amb_type i.mile`b'_binary_w_radius`m' niss1-niss4 riss1-riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
                     c.mxaisbr_HeadNeck c.mxaisbr_Extremities c.mxaisbr_Chest c.mxaisbr_Abdomen c.maxais i.STATE i.year_fe AMI_EVER_ind ///
                     ALZH_EVER_ind ALZH_DEMEN_EVER_ind ATRIAL_FIB_EVER_ind CATARACT_EVER_ind CHRONICKIDNEY_EVER_ind COPD_EVER_ind CHF_EVER_ind ///
                     DIABETES_EVER_ind GLAUCOMA_EVER_ind ISCHEMICHEART_EVER_ind DEPRESSION_EVER_ind OSTEOPOROSIS_EVER_ind ///
