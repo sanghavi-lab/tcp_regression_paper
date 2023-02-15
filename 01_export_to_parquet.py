@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: January 30, 2023
 # Description: This script exports files to parquet format for inpatient claims, emergency ambulance rides, outpatient
 # claims, and chronic conditions (i.e. converts csv files to parquet format). Mileage information will be obtained when
 # ambulance claims merge with mileage.
@@ -26,7 +26,7 @@ client = Client('127.0.0.1:3500')
 ########################################################################################################################
 
 # Specify years to output files
-years=[2011,2012,2013,2014,2015,2016,2017]
+years=[*range(2011,2020)]
 
 # Loop function for each year
 for y in years:
@@ -54,6 +54,13 @@ for y in years:
         medpar_df = dd.read_csv(f'/mnt/labshares/sanghavi-lab/data/medpar/{y}/csv/medpar.csv',usecols=medpar_columns,sep=',', engine='c',
                                 dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
 
+    elif y in [2018,2019]:
+
+        # Read in data from MedPAR (2018/19 were saved under different folder names)
+        medpar_df = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/medpar/csv/medpar.csv', usecols=medpar_columns,sep=',', engine='c',
+                                dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
+
+
     # Keep only IP claims (i.e. excludes nursing homes)
     ip_df = medpar_df[(medpar_df['SS_LS_SNF_IND_CD']!='N')]
 
@@ -68,8 +75,8 @@ for y in years:
 
 ############################################## CREATE AMBULANCE CLAIMS #################################################
 
-# Specify years
-years = [2011,2012,2013,2014,2015,2016,2017]
+# Specify years to output files
+years=[*range(2011,2020)]
 
 # Loop function for each year
 for y in years:
@@ -80,16 +87,16 @@ for y in years:
                       'PRVDR_STATE_CD','PRVDR_ZIP', 'LINE_1ST_EXPNS_DT', 'LINE_PRCSG_IND_CD', 'LINE_CMS_TYPE_SRVC_CD','TAX_NUM']
     # Note: Do not need UPIN since NPIs replaced UPINs as the standard provider identifiers beginning in 2007
 
-    if y in [*range(2011, 2017, 1)]: # list from 2011-2016
+    if y in [*range(2011, 2018, 1)]: # list from 2011-2017
 
         # Read in carrier line for the particular year
         df_BCARRL = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCARRL/csv/bcarrier_line_k.csv',usecols=columns_BCARRL,sep=',',
                                 engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
 
-    elif y in [2017]:
+    elif y in [2018,2019]:
 
-        # Read in carrier line for 2017. (2017 was saved in another directory. Thus, I needed to specify another path)
-        df_BCARRL = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCAR_RL/csv/bcarrier_line_k.csv',usecols=columns_BCARRL, sep=',',
+        # Read in carrier line
+        df_BCARRL = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/bcar/bcar_rl/csv/bcarrier_line.csv',usecols=columns_BCARRL, sep=',',
                                  engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
 
     # Keep only emergency ambulances and if payment was approved
@@ -101,15 +108,15 @@ for y in years:
     columns_BCARRB = ['BENE_ID','CLM_ID', 'CLM_FROM_DT', 'CARR_CLM_PMT_DNL_CD', 'CLM_PMT_AMT','NCH_CARR_CLM_ALOWD_AMT',
                       'PRNCPAL_DGNS_CD', 'CARR_CLM_HCPCS_YR_CD'] + ['ICD_DGNS_CD{}'.format(i) for i in range(1, 13)]
 
-    if y in [*range(2011, 2017, 1)]: # list from 2011-2016
+    if y in [*range(2011, 2018, 1)]: # list from 2011-2017
 
         # Read in BCARRB
         df_BCARRB = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCARRB/csv/bcarrier_claims_k.csv',usecols=columns_BCARRB,sep=',',
                                 engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
-    elif y in [2017]:
+    elif y in [2018,2019]:
 
-        # Read in BCARRB from 2017. (2017 was saved in another directory. Thus, I needed to specify another path)
-        df_BCARRB = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCAR_RB/csv/bcarrier_claims_k.csv',usecols=columns_BCARRB,sep=',',
+        # Read in BCARRB
+        df_BCARRB = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/bcar/bcar_rb/csv/bcarrier_claims.csv',usecols=columns_BCARRB,sep=',',
                             engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
 
     # Merge Line item with Base/Header
@@ -128,7 +135,10 @@ for y in years:
     columns_MBSF_following_year = ['BENE_ID','BENE_DEATH_DT','VALID_DEATH_DT_SW']
 
     # Read in MBSF (same year)
-    df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+    if y in [*range(2011,2018)]:
+        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+    elif y in [2018,2019]:
+        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
 
     # Merge Personal Summary with Carrier file
     carrier_ps_merge = dd.merge(df_BCARRL_BCARRB,df_MBSF,on=['BENE_ID'],how='left')
@@ -138,10 +148,14 @@ for y in years:
     del df_MBSF
 
     # If current year has data in the following year
-    if y in [2011,2012,2013,2014,2015,2016]:
+    if y in [*range(2011,2019)]:
 
         # Read in MBSF following year. Note the "y+1" to specify the correct path for the next year.
-        df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',',
+        if y in [*range(2011,2017)]:
+            df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',',
+                                             engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
+        elif y in [2017,2018]: # following year data is 2018/9 which is saved in folders with different names
+            df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',',
                                              engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
 
         # Rename columns for the following year
@@ -155,7 +169,7 @@ for y in years:
         del df_MBSF_following_year
         del carrier_ps_merge
 
-    elif y in [2017]: # 2018 was not available
+    elif y in [2019]: # 2020 was not available
 
         # Create columns of NaN/NaT using numpy/pandas for 2017 since there is no 2018 data.
         carrier_ps_merge['BENE_DEATH_DT_FOLLOWING_YEAR'] = pd.NaT # empty date columns needed to be specified like this to avoid future errors
@@ -193,8 +207,8 @@ for y in years:
 
 ##################################### CONVERT OP BASE FILES FROM CSV TO PARQUET ########################################
 
-# Specify years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify years to output files
+years=[*range(2011,2020)]
 
 # Define columns for opb
 columns_opb = ['BENE_ID', 'CLM_ID', 'CLM_FROM_DT','CLM_THRU_DT', 'CLM_PMT_AMT', 'NCH_PRMRY_PYR_CLM_PD_AMT', 'ORG_NPI_NUM',
@@ -216,6 +230,12 @@ for y in years:
         # Read in OP claims
         opb = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/OPB/csv/outpatient_base_claim_k.csv',usecols=columns_opb,sep=',',
                           engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False) # the file does does not have "s" at the end of claim in 2017 unlike 2011-2016
+    elif y in [2018,2019]:
+
+        # Read in OP claims
+        opb = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/otpt/opb/csv/outpatient_base_claims.csv',usecols=columns_opb,sep=',',
+                          engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False) # the file does does not have "s" at the end of claim in 2017 unlike 2011-2016
+
 
     # Read out file to parquet
     opb.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/opb/{y}/parquet', compression='gzip', engine='fastparquet')
@@ -225,8 +245,8 @@ for y in years:
 # need a subset of bene's that matched with the ambulance claims when we merge OP and ambulance together.              #
 ########################################################################################################################
 
-# Specify Years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify years to output files
+years=[*range(2011,2020)]
 
 for y in years:
 

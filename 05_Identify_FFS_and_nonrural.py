@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will use the MBSF to obtain death dates and create indicators for Parts A and B. Then, the
 #              script will remove rurals using FORHP's definition. FORHP stands for Federal Office of Rural Health Policy.
 #----------------------------------------------------------------------------------------------------------------------#
@@ -27,8 +27,8 @@ client = Client('127.0.0.1:3500')
 # Specify IP or OP
 claim_type = ['ip','opb'] # opb is outpatient base file (not revenue file)
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 for c in claim_type:
 
@@ -40,11 +40,11 @@ for c in claim_type:
         if y in [2011,2012,2013,2014,2015]:
             # ICD9
             hos_claims = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_9_before_drop_duplicates/{c}/{y}/',engine='fastparquet')
-        if y in [2016,2017]:
+        if y in [*range(2016,2020,1)]:
             #ICD10
             hos_claims = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_10_before_drop_duplicates/{c}/{y}/',engine='fastparquet')
 
-        #_____________________________________________ Obtain Death Dates _____________________________________________#
+        #_______________________________ Obtain other demographic info and death dates ________________________________#
 
         # Identify all columns needed in the MBSF for the current year and the following year
         columns_MBSF = ['BENE_ID', 'STATE_CODE', 'COUNTY_CD', 'ZIP_CD', 'BENE_BIRTH_DT', 'SEX_IDENT_CD',
@@ -52,22 +52,31 @@ for c in claim_type:
         columns_MBSF_following_year = ['BENE_ID', 'BENE_DEATH_DT', 'VALID_DEATH_DT_SW'] # Only need death information in the following year
 
         # Read in MBSF (same year)
-        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv', sep=',',engine='c',
-                              dtype='object', na_filter=False, skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+        if y in [*range(2011,2018)]:
+            df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+        elif y in [2018,2019]:
+            df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
 
         # Merge Personal Summary with hospital claims
         hos_claims_ps_merge = dd.merge(hos_claims, df_MBSF, on=['BENE_ID'], how='left')
+
+        # # check proportion not matched (should be very close to zero)
+        # print(hos_claims_ps_merge[(hos_claims_ps_merge['STATE_CODE'].isna())|(hos_claims_ps_merge['ZIP_CD'].isna())].shape[0].compute()/hos_claims_ps_merge.shape[0].compute())
 
         # Recover memory
         del hos_claims
         del df_MBSF
 
         # If current year has data the following year...
-        if y in [2011,2012,2013,2014,2015,2016]:
+        if y in [*range(2011,2019,1)]:
 
-            # Read in MBSF following year
-            df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y + 1}/MBSFABCD/csv/mbsf_abcd_summary.csv', sep=',',
-                engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
+            # Read in MBSF following year. Note the "y+1" to specify the correct path for the next year.
+            if y in [*range(2011,2017)]:
+                df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',',
+                                                 engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
+            elif y in [2017,2018]: # following year data is 2018/9 which is saved in folders with different names
+                df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',',
+                                                 engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
 
             # Rename columns for the following year
             df_MBSF_following_year = df_MBSF_following_year.rename(
@@ -81,7 +90,7 @@ for c in claim_type:
             del hos_claims_ps_merge
 
         # If current year does NOT have data the following year...
-        elif y in [2017]: # There is no 2018 data.
+        elif y in [2019]: # There is no 2018 data.
 
             # Create columns of NaN/NaT using numpy/pandas for 2017 since there is no 2018 data
             hos_claims_ps_merge['BENE_DEATH_DT_FOLLOWING_YEAR'] = pd.NaT # Need to create empty column of missing date information to bypass potential errors after concatenating all of the years into one DF.
@@ -171,35 +180,35 @@ for c in claim_type:
         # Read out data in parquet
         not_rural_df.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}',compression='gzip',engine='fastparquet')
 
-################ APPENDIX: Check total number of hospital claims that are NOT from rural counties #######################
-
-# Import modules
-import pandas as pd
-
-# Empty list to store numbers
-list_num_rows=[]
-
-# Define a list for IP or OP
-claim_type = ['ip','opb']
-
-# Define years 11-17 to loop through
-years=[*range(2011,2018,1)]
-
-#___ Loop through each year and calculate the number of observations ___#
-for c in claim_type:
-
-    for y in years:
-
-        # Read in data. Note, I already excluded the last three months of 2015.
-        df_nonrural = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}',engine='fastparquet',columns=['BENE_ID'])
-
-        # Calculate the number of rows and append to list above
-        num_rows = df_nonrural.shape[0]
-        list_num_rows.append(num_rows)
-
-        # Check
-        print(f'{c} {y}: ',num_rows)
-
-
-# Print total number of claims (both ip and op) with injury code
-print('Claims without rural (includes 2015 icd10 data) (to find the number of rurals, \nI need to subtract this number from Hospital claims with \ninjury code box: ',sum(list_num_rows))
+# ################ APPENDIX: Check total number of hospital claims that are NOT from rural counties #######################
+#
+# # Import modules
+# import pandas as pd
+#
+# # Empty list to store numbers
+# list_num_rows=[]
+#
+# # Define a list for IP or OP
+# claim_type = ['ip','opb']
+#
+# # Define years 11-17 to loop through
+# years=[*range(2011,2020,1)]
+#
+# #___ Loop through each year and calculate the number of observations ___#
+# for c in claim_type:
+#
+#     for y in years:
+#
+#         # Read in data. Note, I already excluded the last three months of 2015.
+#         df_nonrural = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}',engine='fastparquet',columns=['BENE_ID'])
+#
+#         # Calculate the number of rows and append to list above
+#         num_rows = df_nonrural.shape[0]
+#         list_num_rows.append(num_rows)
+#
+#         # Check
+#         print(f'{c} {y}: ',num_rows)
+#
+#
+# # Print total number of claims (both ip and op) with injury code
+# print('Claims without rural (includes 2015 icd10 data) (to find the number of rurals, \nI need to subtract this number from Hospital claims with \ninjury code box: ',sum(list_num_rows))

@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will merge the trauma data from the American Trauma Society (ATS) with the analytical claims sample to
 # categorize the different hospital types and prepare the files for Stata. This a lot of work went into this procedure, but here is the
 # overall process: (1) Identifying trauma centers by matching the analytical claims with ATS within each year. Any claims that were
@@ -53,7 +53,7 @@ change_lvl_overtime_dict = {}
 #------#
 
 # Specify years
-ats_aha_years = [2012,2013,2014,2015,2016,2017,2018,2019] # We do not have 2012 or 2018 ATS data. Instead we will use 2013 and 2019 as replacements (see below when reading in data)
+ats_aha_years = [*range(2012,2021)] # We do not have 2012 or 2018 ATS data. Instead we will use 2013 and 2019 as replacements (see below when reading in data)
 
 for y in ats_aha_years:
 
@@ -67,6 +67,10 @@ for y in ats_aha_years:
     elif y in [2018]: # using 2019 data.
         trauma_ats_df = pd.read_excel(f'/mnt/labshares/sanghavi-lab/data/public_data/data/trauma_center_data/AM_TRAUMA_DATA_FIRST_TAB_UNLOCKED_2019.xlsx',usecols=cols_ats, dtype=str)
         trauma_xwalk_df = pd.read_excel(f'/mnt/labshares/sanghavi-lab/data/public_data/data/trauma_center_data/NPINUM_MCRNUM_AHAID_CROSSWALK_2019.xlsx', header=3,dtype=str, usecols=cols_xwalk)
+    elif y in [2020]:
+        trauma_ats_df = pd.read_excel(f'/mnt/labshares/sanghavi-lab/data/public_data/data/trauma_center_data/AM_TRAUMA_DATA_FIRST_TAB_UNLOCKED_{y}.xlsx',usecols=cols_ats, dtype=str)
+        trauma_xwalk_df = pd.read_excel(f'/mnt/labshares/sanghavi-lab/data/public_data/data/trauma_center_data/NPINUM_MCRNUM_AHAID_CROSSWALK_2019.xlsx', header=3,dtype=str, usecols=cols_xwalk) # only have 2019 data...
+
 
     # Create trauma_lvl column using State_Des first
     trauma_ats_df['TRAUMA_LEVEL'] = np.where(trauma_ats_df['State_Des'] == '1', '1',
@@ -143,7 +147,7 @@ for y in ats_aha_years:
 matched_claims_dict = {}
 
 # Specify years for analytical sample
-claims_years = [2012,2013,2014,2015,2016,2017]
+claims_years = [*range(2012,2020)]
 
 for y in claims_years:
 
@@ -180,6 +184,8 @@ for y in claims_years:
     df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2015, 2015)
     df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2016, 2016)
     df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2017, 2017)
+    df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2018, 2018)
+    df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2019, 2019)
 
     # ----- CHECK DENOMINATOR OF CLAIMS ----#
     beginning_denom = df_merge_claims_w_niss.shape[0]
@@ -343,8 +349,8 @@ ats_aha_allyears = pd.concat(ats_aha_list,axis=0) # Concat all years of AHA/ATS 
 # Create empty dictionary to store analytical claims that did NOT match with ATS/AHA data. i.e. nontrauma centers
 unmatched_claims_dict = {}
 
-# Specify years
-claims_years = [2012,2013,2014,2015,2016,2017]
+# Specify years for analytical sample
+claims_years = [*range(2012,2020)]
 
 for y in claims_years:
 
@@ -381,6 +387,8 @@ for y in claims_years:
     df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2015, 2015)
     df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2016, 2016)
     df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2017, 2017)
+    df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2018, 2018)
+    df_merge_claims_w_niss['year_fe'] = df_merge_claims_w_niss['year_fe'].mask(df_merge_claims_w_niss['SRVC_BGN_DT'].dt.year == 2019, 2019)
 
     # --- First: Match on 6-digit Provider ID all years and keep only unmatched ---#
 
@@ -475,7 +483,7 @@ cols_ats = ['TCN','AHA_num','ACS_Ver', 'State_Des']
 df_list=[]
 
 # Specify years (2012 and 2018 were not available)
-years=[2013,2014,2015,2016,2017]
+years=[2013,2014,2015,2016,2017,2019,2020]
 
 for y in years:
 
@@ -489,26 +497,26 @@ for y in years:
     df_list.append(change_lvl_overtime_dict[y])
 
 # Concat all years of ATS together
-ats_13_17 = pd.concat(df_list,axis=0)
+ats_13_20 = pd.concat(df_list,axis=0)
 
 # Drop if trauma level is '-'
-ats_13_17 = ats_13_17[ats_13_17['TRAUMA_LEVEL']!='-']
+ats_13_20 = ats_13_20[ats_13_20['TRAUMA_LEVEL']!='-']
 
 # Drop dup on TCN (hospital name) and Trauma level (Use TCN for more specificity since some may have different hospitals but same AHA num)
-ats_13_17_dup = ats_13_17.drop_duplicates(subset=['TCN','TRAUMA_LEVEL'])
+ats_13_20_dup = ats_13_20.drop_duplicates(subset=['TCN','TRAUMA_LEVEL'])
 
 # Then, keep only the duplicates. The duplicates are the providers that have changed level overtime
-ats_13_17_dup = ats_13_17_dup[ats_13_17_dup.duplicated(subset=['TCN','AHA_num'],keep=False)]
+ats_13_20_dup = ats_13_20_dup[ats_13_20_dup.duplicated(subset=['TCN','AHA_num'],keep=False)]
 
 # Sort values by hospital name and year
-ats_13_17_dup = ats_13_17_dup.sort_values(by=['TCN','year'], ascending=[True,True])
+ats_13_20_dup = ats_13_20_dup.sort_values(by=['TCN','year'], ascending=[True,True])
 
 # Put AHA num to a list. These AHA number are hospitals that changed level between 2013-2017
-lvl_change_list_aha_num = ats_13_17_dup['AHA_num'].tolist()  # append to list
+lvl_change_list_aha_num = ats_13_20_dup['AHA_num'].tolist()  # append to list
 
 # Recover memory
-del ats_13_17_dup
-del ats_13_17
+del ats_13_20_dup
+del ats_13_20
 del df_list
 del change_lvl_overtime_dict
 

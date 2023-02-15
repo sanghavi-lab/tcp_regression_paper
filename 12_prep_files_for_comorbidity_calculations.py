@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will create the files needed to create comorbidity scores in SAS. The goal is to merge the raw
 # diagnosis data from the previous script with the analytical file and keep diagnosis codes up to one year prior to the
 # injury event. Lastly, I will change the data from wide to long since the SAS script requires a long data format,
@@ -16,8 +16,8 @@ import numpy as np
 
 ################# MANIPULATE DATAFRAME IN PREPARATION FOR COMORBIDITY CALCULATIONS IN SAS ##############################
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 # Define columns
 col = ['BENE_ID','SRVC_BGN_DT','UNIQUE_ID']
@@ -44,7 +44,7 @@ for y in years:
         # Read in same year only since 2010 is not available
         df_last_12m = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/raw_dx_for_comorbidity/{y}/',engine='fastparquet')
 
-    elif y in [2012,2013,2014,2015,2016,2017]:
+    elif y in [*range(2012,2020)]:
 
         # Read in same year
         df_same_year = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/raw_dx_for_comorbidity/{y}/',engine='fastparquet')
@@ -79,10 +79,12 @@ for y in years:
     df_long = df_long.drop(['column_names'],axis=1)
     df_long = df_long.rename(columns={'UNIQUE_ID':'patid'})
 
-    # Add a label if the diagnosis code is ICD9 or ICD10
+    # Add a label if the diagnosis code is ICD9 or ICD10. 2015 will be automatically dropped in SAS program because I specified '09' for icd9
     if y in [2011,2012,2013,2014,2015]:
         df_long['Dx_CodeType'] = '09'
-    if y in [2016,2017]:
+    if y in [2016]: # Some data one year prior is icd9 if from jan 2015 - sept 2015. Since icd9 begins with numeric and icd10 begins with alpha letters, use following condition to distinguish icd9 from icd10.
+        df_long['Dx_CodeType'] = np.where(df_long['DX'].str[0].str.isdigit(),'09','10')
+    if y in [2017,2018,2019]:
         df_long['Dx_CodeType'] = '10'
 
     # Remove any rows with missing or empty strings in DX

@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will identify any claims that are not transferred claims ("first stop"). The goal of this study
 # is to answer the research question of which first destination hospital is the BEST for patients with injuries. This script
 # will drop any claims that are a result of a transfer from another hospital.
@@ -12,6 +12,7 @@
 # Read in relevant libraries
 import dask.dataframe as dd
 from datetime import timedelta
+import pandas as pd
 
 ############################################ MODULE FOR CLUSTER ########################################################
 
@@ -19,14 +20,15 @@ from datetime import timedelta
 from dask.distributed import Client
 client = Client('127.0.0.1:3500')
     # Need to use 25/30 workers with 40 memory and 2 threads per worker
+    # May need to rerun for the years that did not process due to workers killed.
 
 ############################################### IDENTIFY FIRST STOPS ###################################################
 
 # Specify IP or OP
 claim_type = ['ip','opb'] # opb is outpatient base file (not revenue file)
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 for c in claim_type:
 
@@ -63,6 +65,8 @@ for c in claim_type:
         del raw_op
 
         if c in ['ip']:
+
+            print(c,y)
 
             # Read in ip data (analytical sample)
             df_hos_sample = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_dup_dropped',engine='fastparquet',
@@ -123,6 +127,8 @@ for c in claim_type:
 
         if c in ['opb']:
 
+            print(c,y)
+
             # Read in op data (analytical sample)
             df_hos_sample = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_dup_dropped',engine='fastparquet',
                                            columns=['CLM_ID','BENE_ID','CLM_FROM_DT','PRVDR_NUM','ORG_NPI_NUM'])
@@ -152,9 +158,24 @@ for c in claim_type:
             df_hos_sample_merge = df_hos_sample_merge.drop(['BENE_ID', 'END_DT', 'PRVDR_NUM_RAW', 'ORG_NPI_NUM_RAW',
                                                             'END_DT_PLUSONE','CLM_FROM_DT', 'PRVDR_NUM_ANALYTICAL', 'ORG_NPI_NUM_ANALYTICAL'],axis=1)
 
+            # Because OP claims are so large, I need to read it out then read it back in.... I did not need to do this for IP claims
+            df_hos_sample_merge.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_trnsfr_clms/',engine='fastparquet',compression='gzip')
+            del df_hos_sample_merge
+
+            # Something is wrong with parquet...will convert to csv using pandas then read it in
+            df_hos_sample_merge = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_trnsfr_clms/',
+                engine='fastparquet', columns=['CLM_ID', 'match_ind'])
+            df_hos_sample_merge.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_trnsfr_clms.csv',index=False,index_label=False)
+            del df_hos_sample_merge
+
+            # Read in trnfr_clms after coverting to csv
+            df_hos_sample_merge = dd.read_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_trnsfr_clms.csv',dtype=str)
+            df_hos_sample_merge['CLM_ID']=df_hos_sample_merge['CLM_ID'].astype(str)
+            df_hos_sample_merge['match_ind'] = df_hos_sample_merge['match_ind'].astype(int)
+
             # Read in original op analytical sample with all columns
             op_analytical_sample = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}_dup_dropped',
-                engine='fastparquet')
+                engine='pyarrow')
 
             # Match original op analytical sample with the DF that identified "transfer" claims on CLM ID. Any that matched will be dropped since those are "transfer" claims.
             op_merged = dd.merge(df_hos_sample_merge,op_analytical_sample,how='right',on=['CLM_ID'])
@@ -178,9 +199,7 @@ for c in claim_type:
             op_merged = op_merged.drop(['match_ind'],axis=1)
 
             # Export only first destinations.
-            op_merged.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/first_stops/{c}/{y}',engine='fastparquet',compression='gzip')
-
-
+            op_merged.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/first_stops/{c}/{y}',engine='pyarrow',compression='gzip')
 
 
 

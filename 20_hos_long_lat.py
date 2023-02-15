@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will perform a cartesian merge to link hospital with hospitals and hospital with census block
 #              centroid.
 #----------------------------------------------------------------------------------------------------------------------#

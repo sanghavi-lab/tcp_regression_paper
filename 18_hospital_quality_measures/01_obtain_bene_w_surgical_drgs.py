@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script selects patients with surgical DRGs from the inpatient file. These cases are used to generate
 # hospital quality measures based on inpatient surgical mortality (specifically, binary 30-day mortality indicator minus
 # the modeled risk-adjusted surgical mortality probability).
@@ -27,7 +27,7 @@ col = ['BENE_ID','DRG_CD','ADMSN_DT','SRC_IP_ADMSN_CD','ER_CHRG_AMT','SS_LS_SNF_
        'BENE_DSCHRG_STUS_CD','PRVDR_NUM','MEDPAR_ID','ADMTG_DGNS_CD'] + [f'DGNS_{i}_CD' for i in range(1, 26)]
 
 # Specify years
-years = [2011,2012,2013,2014,2015,2016,2017]
+years = [*range(2011,2020)]
 
 for y in years:
 
@@ -79,7 +79,7 @@ for y in years:
     ip_df_surgical = ip_df_surgical[~ip_df_surgical['SRC_IP_ADMSN_CD'].isin(transfer_and_ED_list)] # the "~" means "opposite"
 
     # Remove last 30 days only if in 2017 since we will examine 30d death.
-    if y in [2017]:
+    if y in [2019]:
         ip_df_surgical=ip_df_surgical[~(ip_df_surgical['ADMSN_DT'].dt.month==12)] # If admission date is not december for 2016
 
     # Keep only short stay
@@ -105,9 +105,11 @@ for y in years:
     columns_MBSF = ['BENE_ID','BENE_BIRTH_DT','SEX_IDENT_CD','RTI_RACE_CD','BENE_DEATH_DT','VALID_DEATH_DT_SW'] # Need Valid column to confirm death date was checked against SSA
     columns_MBSF_following_year = ['BENE_ID','BENE_DEATH_DT','VALID_DEATH_DT_SW'] # Need Valid column to confirm death date was checked against SSA
 
-    # Read in MBSF
-    df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',
-                          dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+    # Read in MBSF (same year)
+    if y in [*range(2011,2018)]:
+        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+    elif y in [2018,2019]:
+        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
 
     # Merge Personal Summary with IP
     ip_df_surgical_ps = dd.merge(ip_df_surgical,df_MBSF,on=['BENE_ID'],how='left')
@@ -117,10 +119,14 @@ for y in years:
     del df_MBSF
 
     # If current year has data the following year
-    if y in [*range(2011,2017,1)]: # list is from 2011-2016
+    if y in [*range(2011,2019,1)]: # list is from 2011-2018
 
-        # Read in MBSF following year
-        df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',',
+        # Read in MBSF following year. Note the "y+1" to specify the correct path for the next year.
+        if y in [*range(2011,2017)]:
+            df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',',
+                                             engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
+        elif y in [2017,2018]: # following year data is 2018/9 which is saved in folders with different names
+            df_MBSF_following_year = dd.read_csv(f'/mnt/data/medicare-share/data/{y+1}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',',
                                              engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF_following_year)
 
         # Rename columns for the following year
@@ -133,7 +139,7 @@ for y in years:
         # Recover memory
         del df_MBSF_following_year
 
-    elif y in [2017]: # 2017 does NOT have data in the following year (i.e. no 2018)
+    elif y in [2019]: # 2019 does NOT have data in the following year (i.e. no 2020)
 
         # Create columns of Nan's using numpy for 2017 since there is no 2018 data
         ip_df_surgical_ps['BENE_DEATH_DT_FOLLOWING_YEAR'] = pd.NaT

@@ -1,13 +1,14 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: Although I have gathered raw institutional information before, I will gather raw data again but, this time,
 # the files exported from here will be specifically created to help identify claims from the analytical sample that
 # eventually had a transfer in the next script. This is not relevant for the first paper but we will eventually explore
 # another research question on if transferring to another hospital result in higher survivability than going straight to
 # a particular hospital type.
 #----------------------------------------------------------------------------------------------------------------------#
+# Note: took out dx columns of transfers because (1) it's too large and (2) we don't need them in this study.
 
 ################################################ IMPORT MODULES ########################################################
 
@@ -23,12 +24,12 @@ client = Client('127.0.0.1:3500')
 
 ################################# FILTER HOSPITAL CLAIMS TO IDENTIFY TRANSFERS  ########################################
 
-# Define years
-years = [2012,2013,2014,2015,2016,2017]
+# Specify Years (no 2011 since we do not have 2010 data when calculating the comorbidity scores)
+years=[*range(2012,2020)]
 
 # Specify columns
-columns_ip = ['BENE_ID', 'ADMSN_DT', 'DSCHRG_DT', 'PRVDR_NUM', 'ORG_NPI_NUM', 'BENE_DSCHRG_STUS_CD', 'ADMTG_DGNS_CD'] + [f'DGNS_{i}_CD' for i in range(1, 26)]
-columns_op = ['BENE_ID', 'CLM_FROM_DT', 'CLM_THRU_DT', 'PRVDR_NUM', 'ORG_NPI_NUM', 'PTNT_DSCHRG_STUS_CD', 'CLM_FAC_TYPE_CD', 'PRNCPAL_DGNS_CD'] + [f'ICD_DGNS_CD{i}' for i in range(1, 26)]
+columns_ip = ['BENE_ID', 'ADMSN_DT', 'DSCHRG_DT', 'PRVDR_NUM', 'ORG_NPI_NUM', 'BENE_DSCHRG_STUS_CD']
+columns_op = ['BENE_ID', 'CLM_FROM_DT', 'CLM_THRU_DT', 'PRVDR_NUM', 'ORG_NPI_NUM', 'PTNT_DSCHRG_STUS_CD', 'CLM_FAC_TYPE_CD']
 
 for y in years:
 
@@ -52,11 +53,7 @@ for y in years:
 
     # Rename IP data and primary dx column so concatenating is easier
     ip=ip.rename(columns={'ADMSN_DT':'TRNSFR_SRVC_BGN_DT','DSCHRG_DT':'TRNSFR_SRVC_END_DT','BENE_DSCHRG_STUS_CD':'TRNSFR_DSCHRG_STUS',
-                          'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM','ADMTG_DGNS_CD':'dx1_t'})
-
-    # Rename remaining dx columns using loop
-    for n in range(1,26):
-        ip = ip.rename(columns={f'DGNS_{n}_CD': f'dx{n+1}_t'}) # Need the n+1 since the primary diagnosis code is dx1
+                          'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM'})
 
     # Convert to Datetime
     ip['TRNSFR_SRVC_BGN_DT'] = dd.to_datetime(ip['TRNSFR_SRVC_BGN_DT'])
@@ -90,11 +87,7 @@ for y in years:
 
     # Rename OP data and primary dx column so concatenating is easier
     op = op.rename(columns={'CLM_FROM_DT':'TRNSFR_SRVC_BGN_DT','CLM_THRU_DT':'TRNSFR_SRVC_END_DT','PTNT_DSCHRG_STUS_CD':'TRNSFR_DSCHRG_STUS',
-                            'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM','PRNCPAL_DGNS_CD':'dx1_t'})
-
-    # Rename remaining dx columns using loop.
-    for n in range(1,26):
-        op = op.rename(columns={f'ICD_DGNS_CD{n}': f'dx{n+1}_t'}) # Need the n+1 since the primary diagnosis code is dx1
+                            'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM'})
 
     # Convert to Datetime
     op['TRNSFR_SRVC_BGN_DT'] = dd.to_datetime(op['TRNSFR_SRVC_BGN_DT'])
@@ -118,7 +111,7 @@ for y in years:
     # Create ip indicator. OP is a zero.
     rel_bene_op['TRNSFR_IP_IND'] = 0
 
-    if y in [2012,2013,2014,2015,2016]:
+    if y in [*range(2012,2019)]:
 
         #___ Gather raw ip claims January of the following year ___#
         # this is necessary since those in December 31 can still be transferred in Jan 1st of the next year
@@ -129,11 +122,7 @@ for y in years:
 
         # Rename IP data and primary dx column so concatenating is easier
         ip_following_year=ip_following_year.rename(columns={'ADMSN_DT':'TRNSFR_SRVC_BGN_DT','DSCHRG_DT':'TRNSFR_SRVC_END_DT','BENE_DSCHRG_STUS_CD':'TRNSFR_DSCHRG_STUS',
-                              'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM','ADMTG_DGNS_CD':'dx1_t'})
-
-        # Rename remaining dx columns using loop.
-        for n in range(1,26):
-            ip_following_year = ip_following_year.rename(columns={f'DGNS_{n}_CD': f'dx{n+1}_t'}) # Need the n+1 since the primary diagnosis code is dx1
+                              'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM'})
 
         # Convert to Datetime
         ip_following_year['TRNSFR_SRVC_BGN_DT'] = dd.to_datetime(ip_following_year['TRNSFR_SRVC_BGN_DT'])
@@ -164,11 +153,7 @@ for y in years:
 
         # Rename OP data and primary dx column so concatenating is easier
         op_following_year = op_following_year.rename(columns={'CLM_FROM_DT':'TRNSFR_SRVC_BGN_DT','CLM_THRU_DT':'TRNSFR_SRVC_END_DT','PTNT_DSCHRG_STUS_CD':'TRNSFR_DSCHRG_STUS',
-                                'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM','PRNCPAL_DGNS_CD':'dx1_t'})
-
-        # Rename remaining dx columns using loop.
-        for n in range(1,26):
-            op_following_year = op_following_year.rename(columns={f'ICD_DGNS_CD{n}': f'dx{n+1}_t'}) # Need the n+1 since the primary diagnosis code is dx1
+                                'PRVDR_NUM':'TRNSFR_PRVDR_NUM','ORG_NPI_NUM':'TRNSFR_ORG_NPI_NUM'})
 
         # Convert to Datetime
         op_following_year['TRNSFR_SRVC_BGN_DT'] = dd.to_datetime(op_following_year['TRNSFR_SRVC_BGN_DT'])
@@ -192,7 +177,7 @@ for y in years:
 
     #___ Combine IP and OP claims first ___#
 
-    if y in [2012,2013,2014,2015,2016]: # 2012-2016 has data in the following year
+    if y in [*range(2012,2019)]: # 2012-2018 has data in the following year
 
         # Concatenate IP and OP
         ip_op = dd.concat([rel_bene_ip,rel_bene_op,rel_bene_ip_fy,rel_bene_op_fy],axis=0) # _fy is following year
@@ -203,7 +188,7 @@ for y in years:
         del rel_bene_ip_fy
         del rel_bene_op_fy
 
-    else: # i.e. 2017. 2017 does NOT have data in the following year
+    else: # i.e. 2019. 2019 does NOT have data in the following year
 
         # Concatenate IP and OP
         ip_op = dd.concat([rel_bene_ip,rel_bene_op],axis=0) # unlike 11-16, 2017 does NOT have data in the following year.

@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will merge the final claim with the risk adjusted Hospital Surgical Quality Scores (which is the binary
 #              30-day mortality indicator minus the risk-adjusted surgical predicted mortality (i.e. probability of mortality)).
 #              This script will also identify hospitals serving at least 90 bene's with major trauma.
@@ -60,11 +60,11 @@ final_matched_claims_allyears_w_hos_qual = pd.merge(final_matched_claims_allyear
 # Merge with unmatched analytical sample (non-trauma centers)
 final_unmatched_claims_allyears_w_hos_qual = pd.merge(final_unmatched_claims_allyears,hos_qual_measure,how='left',on=['PRVDR_NUM','year_fe'])
 
-# # CHECK denominators
-# print(final_matched_claims_allyears_w_hos_qual.shape[0])
-# print(final_matched_claims_allyears.shape[0])
-# print(final_unmatched_claims_allyears_w_hos_qual.shape[0])
-# print(final_unmatched_claims_allyears.shape[0])
+# CHECK denominators
+print(final_matched_claims_allyears_w_hos_qual.shape[0])
+print(final_matched_claims_allyears.shape[0])
+print(final_unmatched_claims_allyears_w_hos_qual.shape[0])
+print(final_unmatched_claims_allyears.shape[0])
 
 #___ Clean DF in preparation to analyze data using p score and regression ___#
 

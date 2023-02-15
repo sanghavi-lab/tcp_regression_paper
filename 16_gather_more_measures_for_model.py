@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will create additional indicators for the logit model - chronic conditions and ambulance type.
 # Also, the script will use pandas (not dask) to read in the data again and merge AHRF (Area Health Resources
 # Files) data containing variables for geographic adjustments, Dartmouth data containing hospital
@@ -24,8 +24,8 @@ client = Client('127.0.0.1:3500')
 
 ################################ CREATE INDICATORS FOR AMBULANCE TYPES, CC, and OTCC ###################################
 
-# Specify years
-years = [2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2012,2020)]
 
 for y in years:
 
@@ -87,9 +87,12 @@ for y in years:
     if y in [2012,2013,2014,2015,2016]:
         MBSFCC = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFCC/csv/mbsf_cc_summary.csv',sep=',',engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False)
         MBSFOTCC = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFOTCC/csv/mbsf_oth_cc_summary.csv',sep=',',engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False)
-    else: # 2017. Again, the file for OTCC was labeled differently from 2011-2016 so I just used an if/then function for convenience.
+    elif y in [2017]: # 2017. Again, the file for OTCC was labeled differently from 2011-2016 so I just used an if/then function for convenience.
         MBSFCC = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFCC/csv/mbsf_cc_summary.csv',sep=',',engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False)
         MBSFOTCC = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFOTCC/csv/mbsf_othcc_summary.csv',sep=',',engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False)
+    else: # 2018/19
+        MBSFCC = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/mbsf/mbsf_cc/csv/mbsf_cc_summary.csv',sep=',',engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False)
+        MBSFOTCC = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/mbsf/mbsf_otcc/csv/mbsf_oth_cc_summary.csv',sep=',',engine='c', dtype='object', na_filter=False,skipinitialspace=True, low_memory=False)
 
     # Gather only date columns from the MBSF file and put into list
     CC_dates = MBSFCC.columns[MBSFCC.columns.str.endswith('_EVER')].tolist()
@@ -135,13 +138,12 @@ for y in years:
     # Read out data
     claims_merge_CC_OTCC.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/claims_w_comorbid_trnsfr_and_ind/{y}/',engine='fastparquet',compression='gzip')
 
-
 ##### MERGE AHRF, DARTMOUTH, & HOSPITAL COMPARE DATA CONTAINING GEOGRAPHIC ADJUSTMENTS AND HOSPITAL CHARACTERISTICS #####
 # Note that I am switching to pandas here. Main reason is convenience since the data is not large anymore               #
 #########################################################################################################################
 
-# Specify years (no 2011 since we do not have 2010 data to calculate the comorbidity scores)
-years = [2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2012,2020)]
 
 for y in years:
 
@@ -262,7 +264,11 @@ for y in years:
     #____________ Merge Dartmouth file to obtain hospital characteristics _____________#
 
     # Read in Dartmouth files by year
-    dartmouth_hos_char = pd.read_csv(f'/mnt/labshares/sanghavi-lab/data/public_data/data/dartmouth_hospital_data/hosp{y}.csv',usecols=['PROVIDER','PSTATE','AHAbeds','POSbeds'],dtype=str, encoding= 'unicode_escape')
+    if y in [*range(2012,2018)]:
+        dartmouth_hos_char = pd.read_csv(f'/mnt/labshares/sanghavi-lab/data/public_data/data/dartmouth_hospital_data/hosp{y}.csv',usecols=['PROVIDER','PSTATE','AHAbeds','POSbeds'],dtype=str, encoding= 'unicode_escape')
+    else: # use 2017 data from dartmouth due not lack of availability
+        dartmouth_hos_char = pd.read_csv(f'/mnt/labshares/sanghavi-lab/data/public_data/data/dartmouth_hospital_data/hosp2017.csv',usecols=['PROVIDER','PSTATE','AHAbeds','POSbeds'],dtype=str, encoding= 'unicode_escape')
+
 
     # Rename variables for consistency
     dartmouth_hos_char = dartmouth_hos_char.rename(columns={'PROVIDER':'PRVDR_NUM','PSTATE':'STATE_ABB'})
@@ -337,7 +343,6 @@ for y in years:
     # CHECK DENOMINATORS
     print(hos_claims_w_geo_dart_hoscomp.shape[0])
     print(hos_claims_w_geo_dart.shape[0])
-    print(list(hos_claims_w_geo_dart_hoscomp.columns))
 
     # Read out data
     hos_claims_w_geo_dart_hoscomp.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/claims_w_comorbid_trnsfr_ind_geo_and_hosquality/{y}.csv',

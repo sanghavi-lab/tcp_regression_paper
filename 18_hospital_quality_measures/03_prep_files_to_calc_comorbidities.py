@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will create the files (in long format) needed to calculate comorbidity scores in SAS.
 # ----------------------------------------------------------------------------------------------------------------------#
 
@@ -14,8 +14,8 @@ import numpy as np
 
 ################### CREATE LONG FORMAT IN PREPARATION FOR COMORBIDITY CALCULATIONS IN SAS ##############################
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 # Define columns
 col = ['BENE_ID','ADMSN_DT','MEDPAR_ID','DRG_CD']
@@ -76,10 +76,12 @@ for y in years:
     df_long = df_long.drop(['column_names'],axis=1)
     df_long = df_long.rename(columns={'MEDPAR_ID':'patid'})
 
-    # Add a label if the diagnosis code is ICD9 or ICD10
+    # Add a label if the diagnosis code is ICD9 or ICD10. 2015 will be automatically dropped in SAS program because I specified '09' for icd9
     if y in [2011,2012,2013,2014,2015]:
         df_long['Dx_CodeType'] = '09'
-    if y in [2016,2017]:
+    if y in [2016]: # Some data one year prior is icd9 if from jan 2015 - sept 2015. Since icd9 begins with numeric and icd10 begins with alpha letters, use following condition to distinguish icd9 from icd10.
+        df_long['Dx_CodeType'] = np.where(df_long['DX'].str[0].str.isdigit(),'09','10')
+    if y in [2017,2018,2019]:
         df_long['Dx_CodeType'] = '10'
 
     # Remove any rows with missing or empty strings in DX

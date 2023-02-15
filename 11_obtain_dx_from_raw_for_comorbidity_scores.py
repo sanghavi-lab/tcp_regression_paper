@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script gathers diagnosis columns from the raw IP, OP, and carrier claims and exports files to parquet
 # format. This diagnosis information will be merged back with the analytical file in another script and used when calculating
 # comorbidity scores.
@@ -24,8 +24,8 @@ client = Client('127.0.0.1:3500')
 
 #___ Carrier ___#
 
-# Define years
-years = [2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 # Specify columns with dx columns
 columns_BCARRB = ['BENE_ID', 'CLM_FROM_DT', 'PRNCPAL_DGNS_CD'] + [f'ICD_DGNS_CD{i}' for i in range(1, 13)]              # for any carrier file
@@ -39,7 +39,7 @@ for y in years:
     columns_processed = ['BENE_ID']
 
     # Read in final analytical data. Since we do not have 2010 data, we can only gather full info for 2012-2017.
-    if y in [*range(2011,2017)]: # 2011-2016 since we have the following year
+    if y in [*range(2011,2019)]: # 2011-2018 since we have the following year
         current_year = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',
                                    engine='fastparquet',columns=columns_processed) # e.g. for 2013 loop, this will gather everyone from 2013
         next_year = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y+1}_major_trauma',
@@ -51,21 +51,21 @@ for y in years:
             # E.g. say we want 2012 raw data. We need the 2012 data and all 2011 data. If the currently loop is on 2011, the "next_year" df will account for
             # everyone from 2012 who also have info in 2011. That way, we have FULL information of all dx codes for 2012 from the current year and year prior (2011) when
             # calculating the comorbidity scores.
-    else: # 2017 since we don't have 2018 data, but 2017 year prior (which is 2016) will be accounted for in the above code)
+    else: # 2019 since we don't have 2020 data
         processed_df = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',
                                    engine='fastparquet',columns=columns_processed)
 
     #___ Read in raw carrier claims and subset relevant bene_ids ___#
 
-    if y in [*range(2011, 2017, 1)]: # list from 2011-2016
+    if y in [*range(2011, 2018, 1)]: # list from 2011-2017
 
         # Read in BCARRB
         df_BCARRB = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCARRB/csv/bcarrier_claims_k.csv',usecols=columns_BCARRB,sep=',',
                                 engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
-    elif y in [2017]:
+    elif y in [2018,2019]:
 
-        # Read in BCARRB from 2017. (2017 was saved in another directory. Thus, I needed to specify another path)
-        df_BCARRB = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCAR_RB/csv/bcarrier_claims_k.csv',usecols=columns_BCARRB,sep=',',
+        # Read in BCARRB (saved in different directory for 18-19
+        df_BCARRB = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/bcar/bcar_rb/csv/bcarrier_claims.csv',usecols=columns_BCARRB,sep=',',
                             engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
 
     # Merge data to keep on relevant bene ids
@@ -85,8 +85,8 @@ for y in years:
 
 #___ Outpatient ___#
 
-# Define years
-years = [2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 # Specify columns with dx columns
 columns_op = ['BENE_ID', 'CLM_FROM_DT', 'PRVDR_NUM', 'PRNCPAL_DGNS_CD'] + [f'ICD_DGNS_CD{i}' for i in range(1, 26)]     # for OP
@@ -100,11 +100,11 @@ for y in years:
     columns_processed = ['BENE_ID']
 
     # Read in final analytical data. Since we do not have 2010 data, we can only gather full info for 2012-2017.
-    if y in [*range(2011,2017)]: # 2011-2016 since we have the following year
+    if y in [*range(2011,2019)]: # 2011-2018 since we have the following year
         current_year = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',
-                                   engine='fastparquet',columns=columns_processed) # e.g. for 2013 loop, this will gather everyone from 2013
+                                   engine='pyarrow',columns=columns_processed) # e.g. for 2013 loop, this will gather everyone from 2013
         next_year = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y+1}_major_trauma',
-                                   engine='fastparquet',columns=columns_processed) # e.g. for 2013 loop, this will gather everyone from 2014 to account for the year prior when the 2013 raw is needed for 2014.
+                                   engine='pyarrow',columns=columns_processed) # e.g. for 2013 loop, this will gather everyone from 2014 to account for the year prior when the 2013 raw is needed for 2014.
         processed_df = dd.concat([current_year,next_year],axis=0)
         del current_year # Recover memory
         del next_year # Recover memory
@@ -112,15 +112,15 @@ for y in years:
             # E.g. say we want 2012 raw data. We need the 2012 data and all 2011 data. If the currently loop is on 2011, the "next_year" df will account for
             # everyone from 2012 who also have info in 2011. That way, we have FULL information of all dx codes for 2012 from the current year and year prior (2011) when
             # calculating the comorbidity scores.
-    else: # 2017 since we don't have 2018 data, but 2017 year prior (which is 2016) will be accounted for in the above code)
+    else: # 2019 since we don't have 2020 data.
         processed_df = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',
-                                   engine='fastparquet',columns=columns_processed)
+                                   engine='pyarrow',columns=columns_processed)
 
     #___ Read in raw OP and subset relevant bene_ids ___#
 
     # Read in OP claims
     op = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/opb/{y}/parquet/',
-                         engine='fastparquet', columns=columns_op)
+                         engine='pyarrow', columns=columns_op)
 
     # Merge data to keep on relevant subset of bene ids
     rel_bene_op = dd.merge(op,processed_df,on=['BENE_ID'],how='inner')
@@ -131,15 +131,15 @@ for y in years:
     #___ Export final raw file with dx info ___#
 
     # Export all raw dx information. Will be used in another code to calculate the comorbidity scores.
-    rel_bene_op.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/op_subset_comorbid/{y}/',engine='fastparquet',compression='gzip')
+    rel_bene_op.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/op_subset_comorbid/{y}/',engine='pyarrow',compression='gzip')
 
     # Recover memory
     del rel_bene_op
 
 ####################### GRAB HOSPITAL AND CARR DX CODES FOR COMORBIDITY CALCULATIONS ##############################
 
-# Define years
-years = [2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 # Specify columns with dx columns
 columns_ip = ['BENE_ID', 'ADMSN_DT', 'PRVDR_NUM', 'ADMTG_DGNS_CD'] + [f'DGNS_{i}_CD' for i in range(1, 26)]             # for IP
@@ -155,7 +155,7 @@ for y in years:
     columns_processed = ['BENE_ID','SRVC_BGN_DT']
 
     # Read in final analytical data. Since we do not have 2010 data, we can only gather full info for 2012-2017.
-    if y in [*range(2011,2017)]: # 2011-2016 since we have the following year
+    if y in [*range(2011,2019)]: # 2011-2018 since we have the following year
         current_year = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',
                                    engine='fastparquet',columns=columns_processed) # e.g. for 2013 loop, this will gather everyone from 2013
         next_year = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y+1}_major_trauma',
@@ -167,7 +167,7 @@ for y in years:
             # E.g. say we want 2012 raw data. We need the 2012 data and all 2011 data. If the currently loop is on 2011, the "next_year" df will account for
             # everyone from 2012 who also have info in 2011. That way, we have FULL information of all dx codes for 2012 from the current year and year prior (2011) when
             # calculating the comorbidity scores.
-    else: # 2017 since we don't have 2018 data, but 2017 year prior (which is 2016) will be accounted for in the above code)
+    else: # 2019 since we don't have 2020 data
         processed_df = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',
                                    engine='fastparquet',columns=columns_processed)
 
@@ -180,7 +180,12 @@ for y in years:
     #___ Read in raw IP and subset relevant bene_ids ___#
 
     # Read in IP claims (planning to use MEDPAR to obtain info from both IP and SNF
-    ip = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MEDPAR/csv/medpar_{y}.csv',usecols=columns_ip,sep=',', engine='c',
+    if y in [2018,2019]:
+        # Read in data from MedPAR (2018/19 were saved under different folder names)
+        ip = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/medpar/csv/medpar.csv', usecols=columns_ip,sep=',', engine='c',
+                                dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
+    else:
+        ip = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MEDPAR/csv/medpar_{y}.csv',usecols=columns_ip,sep=',', engine='c',
                                 dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
 
     # Rename IP data and primary dx column so concatenating is easier

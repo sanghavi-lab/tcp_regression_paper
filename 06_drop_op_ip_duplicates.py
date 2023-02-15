@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will remove any "duplicated" outpatient or inpatient claims. There is a distinction between
 # duplicates and claims within one stay. Even though this script will drop duplicates (i.e. same bene and service date),
 # there may still be claims, especially in outpatient, that are contiguous or overlapping with different service dates).
@@ -23,8 +23,8 @@ client = Client('127.0.0.1:3500')
 
 ################################### DROP OP/IP CLAIMS THAT ARE DUPLICATES ##############################################
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 for y in years:
 

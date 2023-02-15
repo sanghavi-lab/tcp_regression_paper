@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will merge original analytical claims containing surgical code with data from SAS containing
 # the calculated comorbidity scores.
 # ----------------------------------------------------------------------------------------------------------------------#
@@ -15,8 +15,8 @@ import numpy as np
 
 ##################################### MERGE DRG CLAIMS WITH COMORBIDITY SCORES #########################################
 
-# Specify years
-years=[2012,2013,2014,2015,2016,2017] # no 2011 since we require one year prior when calculating comorbidity scores and there is no 2010 data.
+# Specify Years
+years=[*range(2012,2020)] # no 2011 since we require one year prior when calculating comorbidity scores and there is no 2010 data.
 
 for y in years:
 

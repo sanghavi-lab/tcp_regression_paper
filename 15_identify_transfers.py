@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will identify any claims in the analytical file that had a transfer using a data-driven approach.
 # Specifically, I first merged the analytical sample with the raw IP and OP claims created in the previous script. Any claim
 # from the analytical sample that matched, has a different provider id from the raw IP/OP claims, and is within two days of
@@ -17,8 +17,8 @@ import numpy as np
 
 ########################################### IDENTIFY TRANSFERS #########################################################
 
-# Define years
-years = [2012,2013,2014,2015,2016,2017]
+# Specify Years (no 2011 since we do not have 2010 data when calculating the comorbidity scores)
+years=[*range(2012,2020)]
 
 for y in years:
 

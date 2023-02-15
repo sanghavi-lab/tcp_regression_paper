@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: January 30, 2023
 # Description: This script's goal is to create indicators for the hospital visits that resulted from an ambulance ride. First, I kept
 # the hospital claims that have an emergency ambulance ride using a specific merging process. Under section "Concat and merge with raw
 # hospital claims," I merged the resulting file back with the raw institutional claims. This will allow me to correctly and conveniently
@@ -28,7 +28,7 @@ client = Client('127.0.0.1:3500')
 ########################################################################################################################
 
 # Specify Years
-years=[2011,2012,2013,2014,2015,2016,2017]
+years=[*range(2011,2020)]
 
 for year in years:
 
@@ -41,7 +41,7 @@ for year in years:
                    'VALID_DEATH_DT_SW_FOLLOWING_YEAR','PRNCPAL_DGNS_CD'] + ['ICD_DGNS_CD{}'.format(i) for i in range(1, 13)]
 
     # Read in ambulance claims. Duplicated claim id's were dropped when exporting ambulance claims in previous codes. Any other duplicates may be claims that are hospital to hospital (HH) transfers on the same day.
-    amb = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/merged_amb_mi/{year}/parquet/',engine='fastparquet',columns=columns_amb)
+    amb = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/merged_amb_mi/{year}/parquet/',engine='pyarrow',columns=columns_amb)
 
     # Clean df
     amb = amb.rename(columns={'CLM_THRU_DT_x':'CLM_THRU_DT'})
@@ -61,7 +61,7 @@ for year in years:
     columns_ip = ['MEDPAR_ID','BENE_ID', 'ADMSN_DT','DSCHRG_DT','ADMTG_DGNS_CD'] + ['DGNS_{}_CD'.format(i) for i in range(1, 26)] + ['DGNS_E_{}_CD'.format(k) for k in range(1, 13)]
 
     # Read in raw IP claims
-    ip = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/ip/{year}/parquet/', engine='fastparquet', index=False, columns=columns_ip)
+    ip = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/ip/{year}/parquet/', engine='pyarrow', index=False, columns=columns_ip)
 
     # Rename service dates so concatenating is easier
     ip=ip.rename(columns={'ADMSN_DT':'SRVC_BGN_DT'})
@@ -130,7 +130,7 @@ for year in years:
                  ['ICD_DGNS_CD{}'.format(i) for i in range(1, 26)] + ['ICD_DGNS_E_CD{}'.format(j) for j in range(1, 13)]
 
     # Read in raw OP claims
-    op = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/op_subset/{year}/parquet/', engine='fastparquet', columns=columns_op)
+    op = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/op_subset/{year}/parquet/', engine='pyarrow', columns=columns_op)
 
     # Rename service dates so concatenating is easier
     op = op.rename(columns={'CLM_FROM_DT': 'SRVC_BGN_DT', 'CLM_THRU_DT': 'SRVC_END_DT'})
@@ -368,8 +368,8 @@ for year in years:
                    'BENE_BIRTH_DT', 'SEX_IDENT_CD','BENE_DEATH_DT', 'VALID_DEATH_DT_SW', 'RTI_RACE_CD', 'BENE_DEATH_DT_FOLLOWING_YEAR',
                    'VALID_DEATH_DT_SW_FOLLOWING_YEAR','PRNCPAL_DGNS_CD'] + ['ICD_DGNS_CD{}'.format(i) for i in range(1, 13)],axis=1)
 
-    # Read out for sensitivity analysis
-    amb_merge_op_notmatched_plustwo.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/appendix/amb_notmatched/{year}/parquet/',engine='fastparquet')
+    # # Read out for sensitivity analysis
+    amb_merge_op_notmatched_plustwo.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/appendix/amb_notmatched/{year}/parquet/',engine='pyarrow')
 
     #_________________________________Concat and merge with raw hospital claims________________________________________#
 
@@ -401,7 +401,7 @@ for year in years:
 
     # Read in raw ip to merge with the amb_ip claims
     raw_ip = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/ip/{year}/parquet/',
-                             engine='fastparquet', columns=ip_columns)
+                             engine='pyarrow', columns=ip_columns)
 
     # Merge amb_ip file with raw ip to obtain the amb_ind indicator column
     raw_ip_w_amb = dd.merge(raw_ip,amb_ip,on=['MEDPAR_ID'],how='left')
@@ -411,14 +411,14 @@ for year in years:
     del amb_ip
 
     # Export final DF. This IP claim should now have indicators if ip claim was a result of an amb ride
-    raw_ip_w_amb.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/ip_w_amb/{year}/parquet/',compression='gzip',engine='fastparquet')
+    raw_ip_w_amb.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/ip_w_amb/{year}/parquet/',compression='gzip',engine='pyarrow')
 
     # Recover memory
     del raw_ip_w_amb
 
     # Read in raw op base to merge with the amb_op claims
     raw_op = dd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/opb/{year}/parquet/',
-                             engine='fastparquet', columns=op_columns)
+                             engine='pyarrow', columns=op_columns)
 
     # Merge amb/hos file with raw opb to obtain the amb_ind indicator column
     raw_op_w_amb = dd.merge(raw_op,amb_op,on=['CLM_ID'],how='left')
@@ -432,7 +432,7 @@ for year in years:
     raw_op_w_amb = raw_op_w_amb[(raw_op_w_amb['CLM_FAC_TYPE_CD']=='1')|(raw_op_w_amb['amb_ind']==1)]
 
     # Export final DF. This OP claim should now have indicators if op claim was a result of an amb ride
-    raw_op_w_amb.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/opb_w_amb/{year}/parquet/',compression='gzip',engine='fastparquet')
+    raw_op_w_amb.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/opb_w_amb/{year}/parquet/',compression='gzip',engine='pyarrow')
 
     # Recover memory
     del raw_op_w_amb

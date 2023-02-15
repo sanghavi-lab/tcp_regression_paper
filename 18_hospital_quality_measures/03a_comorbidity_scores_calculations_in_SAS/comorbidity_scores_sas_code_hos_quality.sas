@@ -9,7 +9,7 @@ under a new name by specifying a new name after the "data" statement. */
 ods listing close;
 
 /* Read in data (CSV) */
-proc import datafile="/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/hospital_quality_measure/comorbidity_score/2017_for_sas.csv"
+proc import datafile="/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/hospital_quality_measure/comorbidity_score/2019_for_sas.csv"
 	out=diag_imp replace;
 guessingrows=2000000; /* This will "guess" the column type through examining the N rows. Need this to force DX column as character. */
 delimiter=',';
@@ -390,6 +390,6 @@ run;
 proc export 
   data=combined_comorb_score_set
   dbms=csv
-  outfile="/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/hospital_quality_measure/comorbidity_score/files_output_from_sas/2017_sas_output.csv"
+  outfile="/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/hospital_quality_measure/comorbidity_score/files_output_from_sas/2019_sas_output.csv"
   replace;
 run;

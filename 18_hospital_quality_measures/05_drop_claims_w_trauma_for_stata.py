@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will drop any claims containing a trauma ICD code in the first four columns. The reasoning
 #              is that we will use the risk-adjusted surgical mortality as a covariate in our analysis. Thus, we should
 #              not have outcomes for the same sample on both sides of the equation (i.e. outcomes of mortality on left
@@ -17,8 +17,8 @@ import numpy as np
 
 #################################### DROP IF CLAIMS CONTAIN TRAUMA DIAGNOSIS CODES #####################################
 
-# Specify years
-years=[2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2012,2020)] # no 2011 since we require one year prior when calculating comorbidity scores and there is no 2010 data.
 
 for y in years:
 
@@ -53,7 +53,7 @@ for y in years:
 
     #___ ICD10: Drop claims if first three columns contain any dx code starting with S, T, M97, or O9A2-O9A5 ___#
 
-    else: # 2016-2017
+    else: # 2016-2019
 
         # Keep if first three columns plus admitting column does NOT begin with S, T, M97, or O9A2-O9A5
         ip_df_surgical = ip_df_surgical.loc[~(ip_df_surgical[diag_first_four_cols].applymap(lambda x : x.startswith(('S','T','M97','O9A2','O9A3','O9A4','O9A5'))).any(axis='columns'))]
@@ -70,6 +70,8 @@ for y in years:
     ip_df_surgical['year_fe'] = ip_df_surgical['year_fe'].mask(ip_df_surgical['ADMSN_DT'].dt.year == 2015, 2015)
     ip_df_surgical['year_fe'] = ip_df_surgical['year_fe'].mask(ip_df_surgical['ADMSN_DT'].dt.year == 2016, 2016)
     ip_df_surgical['year_fe'] = ip_df_surgical['year_fe'].mask(ip_df_surgical['ADMSN_DT'].dt.year == 2017, 2017)
+    ip_df_surgical['year_fe'] = ip_df_surgical['year_fe'].mask(ip_df_surgical['ADMSN_DT'].dt.year == 2018, 2018)
+    ip_df_surgical['year_fe'] = ip_df_surgical['year_fe'].mask(ip_df_surgical['ADMSN_DT'].dt.year == 2019, 2019)
 
     # Read out data to stata
     ip_df_surgical.to_stata(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/hospital_quality_measure/data_to_run_glm_in_stata/{y}.dta',write_index=False)

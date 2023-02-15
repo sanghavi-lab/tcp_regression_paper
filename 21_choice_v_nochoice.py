@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will create indicator for two area types: choice and no choice. Choice = hospital destination
 # with at least one surrounding hospital of the opposite type; No choice = hospital destination with no surrounding
 # hospitals.
@@ -141,7 +141,7 @@ for m in miles_list:
     # Drop duplicated patid
     subset_merge_df = subset_merge_df.drop_duplicates(subset=['patid'],keep='first')
 
-    # Create choice indicator column
+    # Create choice indicator column (e.g. choice_ind_mi5_5 or choice_ind_mi5 is at least one different hospital within 5.5 or 5 miles respectively)
     if str(m).endswith('.5'):
         subset_merge_df[f'choice_ind_mi{str(m)[0]}_5'] = 1 # take first digit. need to do this because stata doesn't take decimals as variable names
     else:
@@ -175,7 +175,7 @@ for m in miles_list:
     match_no_hos_nearby = match_no_hos_nearby[['patid']]
     unmatch_no_hos_nearby = unmatch_no_hos_nearby[['patid']]
 
-    # Create no choice indicator
+    # Create no choice indicator (e.g. only_hos_at_mi5_5 or only_hos_at_mi5 is no hospital within 5.5 or 5 miles respectively)
     if str(m).endswith('.5'):
         match_no_hos_nearby[f'only_hos_at_mi{str(m)[0]}_5'] = 1  # the str(m)[0] would grab the first character and convert to string. This is necessary since decimals in a column name will generate an error.
         unmatch_no_hos_nearby[f'only_hos_at_mi{str(m)[0]}_5'] = 1

@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: January 30, 2023
 # Description: This script's goal is to obtain mileage information by merging the ambulance claims with mileage
 #----------------------------------------------------------------------------------------------------------------------#
 
@@ -22,7 +22,7 @@ client = Client('127.0.0.1:3500')
 ########################### MERGE EMERGENCY AMBULANCE CLAIMS WITH MILEAGE INFORMATION ##################################
 
 # Specify years
-years=[2011,2012,2013,2014,2015,2016,2017]
+years=[*range(2011,2020)]
 
 for y in years:
 
@@ -30,17 +30,17 @@ for y in years:
     columns_mi = ['CLM_ID','HCPCS_CD','HCPCS_1ST_MDFR_CD','HCPCS_2ND_MDFR_CD','LINE_1ST_EXPNS_DT','LINE_LAST_EXPNS_DT',
                   'LINE_PRCSG_IND_CD','CARR_LINE_MTUS_CNT','CLM_THRU_DT']
 
-    if y in [*range(2011, 2017, 1)]: # list from 2011-2016
+    if y in [*range(2011, 2018, 1)]: # list from 2011-2016
 
         # Read in carrier line data for the particular year to obtain mileage information
         df_BCARRL = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCARRL/csv/bcarrier_line_k.csv',usecols=columns_mi,sep=',',
                                 engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
+    elif y in [2018,2019]:
 
-    elif y in [2017]: # When 2017 was first unpacked, the data was saved somewhere else.
-
-        # Read in carrier line data for the particular year to obtain mileage information
-        df_BCARRL = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/BCAR_RL/csv/bcarrier_line_k.csv',usecols=columns_mi, sep=',',
+        # Read in carrier line
+        df_BCARRL = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/bcar/bcar_rl/csv/bcarrier_line.csv',usecols=columns_mi, sep=',',
                                  engine='c', dtype='object', na_filter=False, skipinitialspace=True, low_memory=False)
+
 
     # Keep mileage information from the carrier line file
     mileage_cd = ['A0425']

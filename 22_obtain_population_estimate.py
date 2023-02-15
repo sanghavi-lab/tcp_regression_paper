@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will obtain additional columns relating to DX codes and population parameters
 #----------------------------------------------------------------------------------------------------------------------#
 
@@ -53,14 +53,14 @@ for m in ['match','unmatch']:
 
         elif (m in ['match']) and (i in ['icd10']):
 
-            df_dict[i+m] = final_matched_claims_allyears[final_matched_claims_allyears['SRVC_BGN_DT'].dt.year.isin([2016,2017])][['patid']+diag_col] # keep only years with icd9 and relevant columns
+            df_dict[i+m] = final_matched_claims_allyears[final_matched_claims_allyears['SRVC_BGN_DT'].dt.year.isin([2016,2017,2018,2019])][['patid']+diag_col] # keep only years with icd9 and relevant columns
 
             for d in diag_col:
                 df_dict[i+m].loc[~df_dict[i+m][f'{d}'].str.startswith(('S','T','V','W','X','Y')),f'{d}'] = 'nan' # Replace if dx is not an injury code
 
         elif (m in ['unmatch']) and (i in ['icd10']):
 
-            df_dict[i+m] = final_unmatched_claims_allyears[final_unmatched_claims_allyears['SRVC_BGN_DT'].dt.year.isin([2016,2017])][['patid']+diag_col] # keep only years with icd9 and relevant columns
+            df_dict[i+m] = final_unmatched_claims_allyears[final_unmatched_claims_allyears['SRVC_BGN_DT'].dt.year.isin([2016,2017,2018,2019])][['patid']+diag_col] # keep only years with icd9 and relevant columns
 
             for d in diag_col:
                 df_dict[i+m].loc[~df_dict[i+m][f'{d}'].str.startswith(('S','T','V','W','X','Y')),f'{d}'] = 'nan' # Replace if dx is not an injury code
@@ -191,3 +191,7 @@ for d in distance_list:
 # Read out
 final_matched_claims_allyears_tot_pop.to_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_matched_claims_w_tot_pop.dta',write_index=False)
 final_unmatched_claims_allyears_tot_pop.to_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_unmatched_claims_w_tot_pop.dta',write_index=False)
+
+
+
+

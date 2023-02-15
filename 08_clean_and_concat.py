@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will clean and concatenate ip and op analytical claim files. Additionally, we will create a
 #              trauma indicator for a secondary column (specifically the second secondary column which we labeled as
 #              dx4 because dx1 is admitting, dx2 is primary, dx3 is the first secondary column, and so on...). The
@@ -24,8 +24,8 @@ client = Client('127.0.0.1:3500')
 
 ######################################### CLEAN AND CONCAT IP AND OP ###################################################
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
 
 for y in years:
 
@@ -69,7 +69,10 @@ for y in years:
     columns_MBSF = ['BENE_ID'] + [f'DUAL_STUS_CD_{i:02}' for i in range(1,13)]
 
     # Read in MBSF (same year)
-    df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+    if y in [*range(2011,2018)]:
+        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/MBSFABCD/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
+    elif y in [2018,2019]:
+        df_MBSF = dd.read_csv(f'/mnt/data/medicare-share/data/{y}/mbsf/mbsf_abcd/csv/mbsf_abcd_summary.csv',sep=',', engine='c',dtype='object', na_filter=False,skipinitialspace=True, low_memory=False,usecols=columns_MBSF)
 
     # Merge Personal Summary with Carrier file
     ip_op = dd.merge(ip_op,df_MBSF,on=['BENE_ID'],how='left')

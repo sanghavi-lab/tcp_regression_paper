@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: After we created the new injury severity scores using ICDPICR, this script will merge the NISS
 # information from ICDPICR with the analytical claims data, keep NISS from 16-75 (major trauma), and export the data.
 # ----------------------------------------------------------------------------------------------------------------------#
@@ -21,8 +21,9 @@ client = Client('127.0.0.1:3500')
 # This section will only keep those with NISS from 16 to 75 (major trauma)                                             #
 ########################################################################################################################
 
-# Define years
-years=[2011,2012,2013,2014,2015,2016,2017]
+# Specify Years
+years=[*range(2011,2020)]
+years = [2016,2017,2018,2019] # starting at 2016 to ensure that i used gemmin
 
 # Define columns from icdpicr output
 icdpicr_col = ['UNIQUE_ID', 'mxaisbr_HeadNeck', 'mxaisbr_Face', 'mxaisbr_Extremities', 'mxaisbr_Chest', 'mxaisbr_Abdomen',
@@ -37,9 +38,9 @@ for y in years:
     # Read in file from ICDPICR containing NISS information
     if y in [*range(2011,2016)]:
         icdpicr_niss = dd.read_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/appendix/test_different_arguments_in_1_0_1_icdpicr/{y}_reg.csv',
-                               dtype='str',usecols=icdpicr_col)
-    else: # grab gem_min if 2016,2017
-        icdpicr_niss = dd.read_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/appendix/test_different_arguments_in_1_0_1_icdpicr/{y}_gem_min_reg.csv',
+                               dtype='str',usecols=icdpicr_col) # use the correct file located in appendix folder
+    else: # grab gem_min if 2016-2019
+        icdpicr_niss = dd.read_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/niss_calculation/from_R/{y}_icdpic_r_output.csv',
                                    dtype='str',usecols=icdpicr_col)
 
     # Convert to variables to float
@@ -54,10 +55,10 @@ for y in years:
     # Merge so that the niss information is connected to the original claim data
     df_merge = dd.merge(df_claims,icdpicr_niss,how='inner',on=['UNIQUE_ID'])
 
-    # # CHECK to make sure each df denominator is the same
-    # print(df_claims.shape[0].compute()) # number will be higher due to duplicated unique id. will drop in code 11
-    # print(icdpicr_niss.shape[0].compute())
-    # print(df_merge.shape[0].compute()) # number should be the same as the first one
+    # CHECK to make sure each df denominator is the same
+    print(df_claims.shape[0].compute()) # number will be higher due to duplicated unique id. will drop in code 11
+    print(icdpicr_niss.shape[0].compute())
+    print(df_merge.shape[0].compute()) # number should be the same as the first one
 
     # Recover memory
     del df_claims
@@ -73,7 +74,7 @@ for y in years:
     # Read out
     df_merge.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',engine='fastparquet',compression='gzip')
 
-# APPENDIX: Print total number of claims that are not major trauma
-print('Not major trauma: ',sum(num_rows_not_major_trauma))
+# # APPENDIX: Print total number of claims that are not major trauma
+# print('Not major trauma: ',sum(num_rows_not_major_trauma))
 
 

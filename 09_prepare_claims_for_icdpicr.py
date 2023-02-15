@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script prepares the files for ICDPICR by dropping any duplicated icd codes.
 #----------------------------------------------------------------------------------------------------------------------#
 
@@ -16,7 +16,7 @@ import pandas as pd
 ########################################################################################################################
 
 # Specify Years
-years = [2011,2012,2013,2014,2015,2016,2017]
+years=[*range(2011,2020)]
 
 # Identify columns needed for ICDPICR
 col = ['UNIQUE_ID'] + [f'dx{i}' for i in range(1,39)]

@@ -11,7 +11,7 @@ quietly{ /* Suppress outputs */
 type (ALS vs BLS) on 30-day mortality.*/
 
 * Place in terminal to run script
-* do /mnt/labshares/sanghavi-lab/Jessy/hpc_utils/codes/python/trauma_center_project/final_regression_analysis_paper_two/23_analysis_in_stata/regression_analysis.do
+* do /mnt/labshares/sanghavi-lab/Jessy/hpc_utils/codes/python/trauma_center_project/final_regression_analysis_paper_two/23_analysis_in_stata/test_reg_analysis.do
 
 * Set working directory
 cd "/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/"
@@ -402,12 +402,26 @@ foreach p of local panel_list{
                     margins i.mile`b'_binary_w_radius`m', cformat(%9.3f) saving(radius`m'_binary`b'_`g'_`p', replace) post coeflegend
 
                     * t tests between less and more miles at each mile binary for choice and no choice
-                    noisily lincom _b[1.mile`b'_binary_w_radius`m'] - _b[0bn.mile`b'_binary_w_radius`m']
+                    *noisily lincom _b[1.mile`b'_binary_w_radius`m'] - _b[0bn.mile`b'_binary_w_radius`m']
                 }
                 else{ /* panel a */
 
+                    /*
+                    * original
                     * Logit regression (to have more power, I reduced CC indicators to categorical variables)
                     logit thirty_day_death_ind i.treatment##ib1.amb_type i.mile`b'_binary_w_radius`m' niss1-niss4 riss1-riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
+                    c.mxaisbr_HeadNeck c.mxaisbr_Extremities c.mxaisbr_Chest c.mxaisbr_Abdomen c.maxais i.STATE i.year_fe AMI_EVER_ind ///
+                    ALZH_EVER_ind ALZH_DEMEN_EVER_ind ATRIAL_FIB_EVER_ind CATARACT_EVER_ind CHRONICKIDNEY_EVER_ind COPD_EVER_ind CHF_EVER_ind ///
+                    DIABETES_EVER_ind GLAUCOMA_EVER_ind ISCHEMICHEART_EVER_ind DEPRESSION_EVER_ind OSTEOPOROSIS_EVER_ind ///
+                    RA_OA_EVER_ind STROKE_TIA_EVER_ind CANCER_BREAST_EVER_ind CANCER_COLORECTAL_EVER_ind CANCER_PROSTATE_EVER_ind CANCER_LUNG_EVER_ind ///
+                    CANCER_ENDOMETRIAL_EVER_ind ANEMIA_EVER_ind ASTHMA_EVER_ind HYPERL_EVER_ind HYPERP_EVER_ind HYPERT_EVER_ind HYPOTH_EVER_ind ///
+                    MULSCL_MEDICARE_EVER_ind OBESITY_MEDICARE_EVER_ind EPILEP_MEDICARE_EVER_ind median_hh_inc_ln pvrty fem_cty eld_cty ///
+                    ib0.metro_micro_cnty cllge gen_md med_cty full_dual_ind SH_ind EH_ind NH_ind RH_ind
+                    */
+
+                    * test: three way interaction
+                    * Logit regression (to have more power, I reduced CC indicators to categorical variables)
+                    logit thirty_day_death_ind i.treatment##ib1.amb_type##i.mile`b'_binary_w_radius`m' niss1-niss4 riss1-riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
                     c.mxaisbr_HeadNeck c.mxaisbr_Extremities c.mxaisbr_Chest c.mxaisbr_Abdomen c.maxais i.STATE i.year_fe AMI_EVER_ind ///
                     ALZH_EVER_ind ALZH_DEMEN_EVER_ind ATRIAL_FIB_EVER_ind CATARACT_EVER_ind CHRONICKIDNEY_EVER_ind COPD_EVER_ind CHF_EVER_ind ///
                     DIABETES_EVER_ind GLAUCOMA_EVER_ind ISCHEMICHEART_EVER_ind DEPRESSION_EVER_ind OSTEOPOROSIS_EVER_ind ///
@@ -420,8 +434,34 @@ foreach p of local panel_list{
 
                     table TRAUMA_LEVEL amb_type, stat(freq) /* View sample size */
 
+                    /*
+                    * original
                     * Predict with margins
                     margins i.treatment##ib1.amb_type, cformat(%9.3f) saving(radius`m'_binary`b'_`g'_`p', replace) post coeflegend
+                    */
+
+                    * test: three way interaction
+                    * Predict with margins
+                    noisily margins i.treatment##ib1.amb_type##i.mile`b'_binary_w_radius`m', cformat(%9.3f) saving(test_radius`m'_binary`b'_`g'_`p', replace) post coeflegend
+
+
+                    *test: lincom between high vs low mi
+                    noisily lincom _b[1.treatment#2.amb_type#1.mile`b'_binary_w_radius`m'] - _b[1.treatment#2.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within ALS and T1, more mi vs less mi*/
+                    noisily lincom _b[1.treatment#1bn.amb_type#1.mile`b'_binary_w_radius`m'] - _b[1.treatment#1bn.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within BLS and T1, more mi vs less mi*/
+                    noisily lincom _b[0bn.treatment#2.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#2.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within ALS and NT, more mi vs less mi*/
+                    noisily lincom _b[0bn.treatment#1bn.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#1bn.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within BLS and NT, more mi vs less mi*/
+                    
+
+                    * test: lincom: als going less mile to nt vs als going more mile to t1
+                    *noisily lincom _b[1.treatment#2.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#2.amb_type#0bn.mile`b'_binary_w_radius`m'] /*ALS going more mile to T1 vs ALS going less mile to nearest NT*/
+
+
+                    noisily di " " /* for a space between results */
+                    noisily di " " /* for a space between results */
+                    noisily di " " /* for a space between results */
+                    noisily di " " /* for a space between results */
+                    noisily di " " /* for a space between results */
+
                 }
 
 
@@ -437,7 +477,7 @@ foreach p of local panel_list{
 }
 
 
-
+/*
 
 *---------- CREATE BALANCE TABLE FOR EXCEL (BEFORE AND AFTER WEIGHTING) ------------*
 
@@ -710,5 +750,7 @@ putexcel K9 = "`mi_l1_minus_nt_in_bls_c'"
 }
 
 * scp jessyjkn@phs-rs24.bsd.uchicago.edu:/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/tab_char_no_labels.xlsx /Users/jessyjkn/Desktop/Job/Data/trauma_center_project/regression_results
+
+*/
 
 } /* for quietly*/

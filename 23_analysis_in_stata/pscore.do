@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------------*
 * Project: Trauma Center Project (Regression Paper with Pre-Hospital)
 * Author: Jessy Nguyen
-* Last Updated: September 12, 2022
+* Last Updated: February 8, 2023
 * Description: Propensity score analysis with overlap weights. Creates a section of exhibit 3.
 *------------------------------------------------------------------------------*
 

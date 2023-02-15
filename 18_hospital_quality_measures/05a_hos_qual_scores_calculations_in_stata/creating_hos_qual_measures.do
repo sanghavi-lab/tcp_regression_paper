@@ -14,11 +14,11 @@ cd "/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/
 
 *--- Read in surgical DRG data ---*
 
-* Read in Data for 2017 first
-use patid BENE_ID DRG_CD ADMSN_DT PRVDR_NUM SEX_IDENT_CD RTI_RACE_CD comorbidity_score thirty_day_death_ind AGE year_fe using 2017, clear
+* Read in Data for 2019 first
+use patid BENE_ID DRG_CD ADMSN_DT PRVDR_NUM SEX_IDENT_CD RTI_RACE_CD comorbidity_score thirty_day_death_ind AGE year_fe using 2019, clear
 
-* Append all other years 12-16
-forval i=12/16{
+* Append all other years 12-18
+forval i=12/18{
 append using 20`i', keep(patid BENE_ID DRG_CD ADMSN_DT PRVDR_NUM SEX_IDENT_CD RTI_RACE_CD comorbidity_score thirty_day_death_ind AGE year_fe)
 }
 

@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: The script will create figures 1, 2, and 3
 #----------------------------------------------------------------------------------------------------------------------#
 
@@ -121,6 +121,7 @@ for b in mile_binary:
 
     plt.savefig(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/figures/exhibit4_binary{b}_panel_a.pdf',bbox_inches="tight")  # Save figure
 
+    plt.show()
     plt.close()
 #_____________________ PANEL B _______________________#
 
@@ -246,6 +247,7 @@ for b in mile_binary:
 
     plt.savefig(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/figures/exhibit4_binary{b}_panel_b.pdf',bbox_inches="tight")  # Save figure
 
+    plt.show()
     plt.close()
 
     del df_dict_c_nc

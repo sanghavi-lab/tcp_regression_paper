@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------#
 # Project: (REG) Trauma center analysis using Medicare data
 # Author: Jessy Nguyen
-# Last Updated: September 12, 2022
+# Last Updated: February 8, 2023
 # Description: This script will merge the analytical sample with comorbidity score data from SAS and begin creating indicators
 # for mechanisms of injury and death. Recall that I discussed about the difference between duplicates and claims within
 # a stay (i.e. contiguous or overlapping claims). I will deal with the overlapping claims at the end of this script.
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 ############################## MERGE CLAIMS WITH COMORBIDITY SCORES FROM SAS ###########################################
 
 # Specify Years (no 2011 since we do not have 2010 data when calculating the comorbidity scores)
-years=[2012,2013,2014,2015,2016,2017]
+years=[*range(2012,2020)]
 
 for y in years:
 
@@ -103,7 +103,7 @@ for y in years:
         #___ Only for icd10 ___#
         claim_w_comorbidity['X58_ind'] = 0 # this ind is zero to concatenate data easily. The X58 indicator will be created for icd 10 2016 and 2017 (see below)
 
-    if y in [2016,2017]: # ICD10
+    if y in [2016,2017,2018,2019]: # ICD10
 
         #___ Indicators with some based on WISQARS ___#
 
