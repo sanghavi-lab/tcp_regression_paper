@@ -204,7 +204,7 @@ gen median_hh_inc_ln = ln(m_hh_inc)
 *______ Exhibit 3 _______#
 
 * Working with thirty day death
-drop if SRVC_BGN_DT >= mdyhms(12, 01, 2017, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2017) */
+drop if SRVC_BGN_DT >= mdyhms(12, 01, 2019, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2019) */
 
 * Create binary for miles variable at different threshold
 gen mile_binary = 0
@@ -355,7 +355,7 @@ foreach p of local panel_list{
 
         preserve
 
-        drop if SRVC_BGN_DT >= mdyhms(12, 01, 2017, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2017) */
+        drop if SRVC_BGN_DT >= mdyhms(12, 01, 2019, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2019) */
 
         forvalues m=2(1)8 { /* Loop through different mile radius */
 
@@ -419,6 +419,7 @@ foreach p of local panel_list{
                     ib0.metro_micro_cnty cllge gen_md med_cty full_dual_ind SH_ind EH_ind NH_ind RH_ind
                     */
 
+
                     * test: three way interaction
                     * Logit regression (to have more power, I reduced CC indicators to categorical variables)
                     logit thirty_day_death_ind i.treatment##ib1.amb_type##i.mile`b'_binary_w_radius`m' niss1-niss4 riss1-riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
@@ -442,7 +443,7 @@ foreach p of local panel_list{
 
                     * test: three way interaction
                     * Predict with margins
-                    noisily margins i.treatment##ib1.amb_type##i.mile`b'_binary_w_radius`m', cformat(%9.3f) saving(test_radius`m'_binary`b'_`g'_`p', replace) post coeflegend
+                    margins i.treatment##ib1.amb_type##i.mile`b'_binary_w_radius`m', cformat(%9.3f) saving(test_radius`m'_binary`b'_`g'_`p', replace) post coeflegend
 
 
                     *test: lincom between high vs low mi
@@ -450,11 +451,15 @@ foreach p of local panel_list{
                     noisily lincom _b[1.treatment#1bn.amb_type#1.mile`b'_binary_w_radius`m'] - _b[1.treatment#1bn.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within BLS and T1, more mi vs less mi*/
                     noisily lincom _b[0bn.treatment#2.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#2.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within ALS and NT, more mi vs less mi*/
                     noisily lincom _b[0bn.treatment#1bn.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#1bn.amb_type#0bn.mile`b'_binary_w_radius`m'] /*within BLS and NT, more mi vs less mi*/
-                    
+
 
                     * test: lincom: als going less mile to nt vs als going more mile to t1
                     *noisily lincom _b[1.treatment#2.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#2.amb_type#0bn.mile`b'_binary_w_radius`m'] /*ALS going more mile to T1 vs ALS going less mile to nearest NT*/
 
+                    * test: lincom: bls going less mile to nt vs bls going more mile to t1
+                    *noisily lincom _b[1.treatment#1bn.amb_type#1.mile`b'_binary_w_radius`m'] - _b[0bn.treatment#1bn.amb_type#0bn.mile`b'_binary_w_radius`m'] /*BLS going more mile to T1 vs BLS going less mile to nearest NT*/
+
+                    *^ remember that there is a difference between choice and nochoice
 
                     noisily di " " /* for a space between results */
                     noisily di " " /* for a space between results */

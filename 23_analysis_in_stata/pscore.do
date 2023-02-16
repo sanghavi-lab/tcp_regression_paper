@@ -484,7 +484,7 @@ foreach m of local mile_nomile{
         }
 
         * Drop last three months since we will work with thirty day death
-        drop if SRVC_BGN_DT >= mdyhms(12, 01, 2017, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2017) */
+        drop if SRVC_BGN_DT >= mdyhms(12, 01, 2019, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2019) */
 
         * Unadjusted: Regress (last month should have been dropped already)
         reg thirty_day_death_ind binary

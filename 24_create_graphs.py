@@ -115,7 +115,7 @@ for b in mile_binary:
     legend1 = plt.legend(handles=[c1, c2, c3, c4],
               labels=['BLS to Non-trauma','BLS to Lvl 1','ALS to Non-trauma','ALS to Lvl 1'],
               ncol=1, handletextpad=0.5, handlelength=1.0, columnspacing=-0.5,
-              fontsize='small',bbox_to_anchor=(1, 1), loc=2, borderaxespad=0,title=None, frameon=False)
+              fontsize='small',bbox_to_anchor=(0, 1), loc=2, borderaxespad=0,title=None, frameon=False)
 
     sns.despine()  # Trim off the edges that are not the axis
 

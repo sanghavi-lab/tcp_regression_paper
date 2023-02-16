@@ -1,4 +1,5 @@
 *------------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
 * Project: Trauma Center Project (Regression Paper with Pre-Hospital)
 * Author: Jessy Nguyen
 * Last Updated: February 8, 2023
@@ -85,6 +86,28 @@ replace niss_bands = 5 if niss>49
 label define niss_label 1 "1-15" 2 "16-24" 3 "25-40" 4 "41-49" 5 "50+"
 label values niss_bands niss_label
 
+* Gen indicators for niss categories
+gen n16_24 = 0
+replace n16_24 = 1 if niss_bands == 2
+gen n25_40 = 0
+replace n25_40 = 1 if niss_bands == 3
+gen n41 = 0
+replace n41 = 1 if (niss_bands == 4) | (niss_bands == 5)
+
+* Gen indicators for comorbidity  categories
+gen cs1 = 0
+replace cs1 = 1 if (comorbidityscore<1)
+gen cs1_3 = 0
+replace cs1_3 = 1 if ((comorbid>=1)&(comorbid<4))
+gen cs4 = 0
+replace cs4 = 1 if ((comorbid>=4))
+
+* Gen indicators for num chronic condition categories
+gen cc1_6 = 0
+replace cc1_6 = 1 if (cc_otcc_count<7)
+gen cc7 = 0
+replace cc7 = 1 if (cc_otcc_count>=7)
+
 * Destring and rename variables needed in the model
 destring RTI_RACE_CD, generate(RACE)
 destring SEX_IDENT_CD, generate(SEX)
@@ -160,7 +183,7 @@ ren t1 treatment
 *--------------- Create macros for characteristic table (Unadjusted; exhibit 1) ---------------*
 
 * Create list named covariates. Indicators were created above
-local covariates niss riss AGE comorbid female white black other_n asian_pi hispanic BLOODPT m_hh_inc pvrty fem_cty eld_cty metro cllge gen_md med_cty cc_cnt
+local covariates niss riss AGE comorbid female white black other_n asian_pi hispanic BLOODPT m_hh_inc pvrty fem_cty eld_cty metro cllge gen_md med_cty cc_cnt n16_24 n25_40 n41 cs1 cs1_3 cs4 cc1_6 cc7
 
 * Create list of hospital type (1 is level 1 and 6 is nontrauma)
 local hos_type 1 6
@@ -183,7 +206,7 @@ foreach a of local amb_type{
             local `h'`a' = string(`r(N)')
 
             * Save the means of the treatment and control groups in macros
-            if inlist("`c'","female","white", "black", "other_n", "asian_pi", "hispanic")|inlist("`c'","pvrty", "fem_cty", "eld_cty", "metro", "cllge", "gen_md", "med_cty"){
+            if inlist("`c'","female","white", "black", "other_n", "asian_pi", "hispanic")|inlist("`c'","pvrty", "fem_cty", "eld_cty", "metro", "cllge", "gen_md", "med_cty")|inlist("`c'","n16_24", "n25_40", "n41", "cs1", "cs1_3", "cs4", "cc1_6")|inlist("`c'","cc7"){
                 *local `c'_p = string(`r(p)',"%3.2f")
                 local `h'`a'`c' = string(`r(mean)'*100,"%9.1f")
             }
@@ -204,7 +227,7 @@ gen median_hh_inc_ln = ln(m_hh_inc)
 *______ Exhibit 3 _______#
 
 * Working with thirty day death
-drop if SRVC_BGN_DT >= mdyhms(12, 01, 2017, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2017) */
+drop if SRVC_BGN_DT >= mdyhms(12, 01, 2019, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2019) */
 
 * Create binary for miles variable at different threshold
 gen mile_binary = 0
@@ -355,7 +378,7 @@ foreach p of local panel_list{
 
         preserve
 
-        drop if SRVC_BGN_DT >= mdyhms(12, 01, 2017, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2017) */
+        drop if SRVC_BGN_DT >= mdyhms(12, 01, 2019, 0, 0, 0) /* To use 30 day death, need to drop last 30 days (Dec 2019) */
 
         forvalues m=2(1)8 { /* Loop through different mile radius */
 
@@ -489,65 +512,105 @@ putexcel B9 = "`62cc_cnt'"
 putexcel C9 = "`11cc_cnt'"
 putexcel D9 = "`12cc_cnt'"
 
-putexcel A10 = "`61comorbid'"
-putexcel B10 = "`62comorbid'"
-putexcel C10 = "`11comorbid'"
-putexcel D10 = "`12comorbid'"
+putexcel A11 = "`61cc1_6'"
+putexcel B11 = "`62cc1_6'"
+putexcel C11 = "`11cc1_6'"
+putexcel D11 = "`12cc1_6'"
 
-putexcel A11 = "`61niss'"
-putexcel B11 = "`62niss'"
-putexcel C11 = "`11niss'"
-putexcel D11 = "`12niss'"
+putexcel A12 = "`61cc7'"
+putexcel B12 = "`62cc7'"
+putexcel C12 = "`11cc7'"
+putexcel D12 = "`12cc7'"
 
-putexcel A12 = "`61riss'"
-putexcel B12 = "`62riss'"
-putexcel C12 = "`11riss'"
-putexcel D12 = "`12riss'"
+putexcel A13 = "`61comorbid'"
+putexcel B13 = "`62comorbid'"
+putexcel C13 = "`11comorbid'"
+putexcel D13 = "`12comorbid'"
 
-putexcel A13 = "`61BLOODPT'"
-putexcel B13 = "`62BLOODPT'"
-putexcel C13 = "`11BLOODPT'"
-putexcel D13 = "`12BLOODPT'"
+putexcel A15 = "`61cs1'"
+putexcel B15 = "`62cs1'"
+putexcel C15 = "`11cs1'"
+putexcel D15 = "`12cs1'"
 
-putexcel A14 = "`61m_hh_inc'"
-putexcel B14 = "`62m_hh_inc'"
-putexcel C14 = "`11m_hh_inc'"
-putexcel D14 = "`12m_hh_inc'"
+putexcel A16 = "`61cs1_3'"
+putexcel B16 = "`62cs1_3'"
+putexcel C16 = "`11cs1_3'"
+putexcel D16 = "`12cs1_3'"
 
-putexcel A16 = "`61pvrty'"
-putexcel B16 = "`62pvrty'"
-putexcel C16 = "`11pvrty'"
-putexcel D16 = "`12pvrty'"
+putexcel A17 = "`61cs4'"
+putexcel B17 = "`62cs4'"
+putexcel C17 = "`11cs4'"
+putexcel D17 = "`12cs4'"
 
-putexcel A17 = "`61fem_cty'"
-putexcel B17 = "`62fem_cty'"
-putexcel C17 = "`11fem_cty'"
-putexcel D17 = "`12fem_cty'"
+putexcel A18 = "`61niss'"
+putexcel B18 = "`62niss'"
+putexcel C18 = "`11niss'"
+putexcel D18 = "`12niss'"
 
-putexcel A18 = "`61eld_cty'"
-putexcel B18 = "`62eld_cty'"
-putexcel C18 = "`11eld_cty'"
-putexcel D18 = "`12eld_cty'"
+putexcel A20 = "`61n16_24'"
+putexcel B20 = "`62n16_24'"
+putexcel C20 = "`11n16_24'"
+putexcel D20 = "`12n16_24'"
 
-putexcel A19 = "`61metro'"
-putexcel B19 = "`62metro'"
-putexcel C19 = "`11metro'"
-putexcel D19 = "`12metro'"
+putexcel A21 = "`61n25_40'"
+putexcel B21 = "`62n25_40'"
+putexcel C21 = "`11n25_40'"
+putexcel D21 = "`12n25_40'"
 
-putexcel A20 = "`61cllge'"
-putexcel B20 = "`62cllge'"
-putexcel C20 = "`11cllge'"
-putexcel D20 = "`12cllge'"
+putexcel A22 = "`61n41'"
+putexcel B22 = "`62n41'"
+putexcel C22 = "`11n41'"
+putexcel D22 = "`12n41'"
 
-putexcel A21 = "`61gen_md'"
-putexcel B21 = "`62gen_md'"
-putexcel C21 = "`11gen_md'"
-putexcel D21 = "`12gen_md'"
+putexcel A23 = "`61riss'"
+putexcel B23 = "`62riss'"
+putexcel C23 = "`11riss'"
+putexcel D23 = "`12riss'"
 
-putexcel A22 = "`61med_cty'"
-putexcel B22 = "`62med_cty'"
-putexcel C22 = "`11med_cty'"
-putexcel D22 = "`12med_cty'"
+putexcel A24 = "`61BLOODPT'"
+putexcel B24 = "`62BLOODPT'"
+putexcel C24 = "`11BLOODPT'"
+putexcel D24 = "`12BLOODPT'"
+
+putexcel A25 = "`61m_hh_inc'"
+putexcel B25 = "`62m_hh_inc'"
+putexcel C25 = "`11m_hh_inc'"
+putexcel D25 = "`12m_hh_inc'"
+
+putexcel A27 = "`61pvrty'"
+putexcel B27 = "`62pvrty'"
+putexcel C27 = "`11pvrty'"
+putexcel D27 = "`12pvrty'"
+
+putexcel A28 = "`61fem_cty'"
+putexcel B28 = "`62fem_cty'"
+putexcel C28 = "`11fem_cty'"
+putexcel D28 = "`12fem_cty'"
+
+putexcel A29 = "`61eld_cty'"
+putexcel B29 = "`62eld_cty'"
+putexcel C29 = "`11eld_cty'"
+putexcel D29 = "`12eld_cty'"
+
+putexcel A30 = "`61metro'"
+putexcel B30 = "`62metro'"
+putexcel C30 = "`11metro'"
+putexcel D30 = "`12metro'"
+
+putexcel A31 = "`61cllge'"
+putexcel B31 = "`62cllge'"
+putexcel C31 = "`11cllge'"
+putexcel D31 = "`12cllge'"
+
+putexcel A32 = "`61gen_md'"
+putexcel B32 = "`62gen_md'"
+putexcel C32 = "`11gen_md'"
+putexcel D32 = "`12gen_md'"
+
+putexcel A33 = "`61med_cty'"
+putexcel B33 = "`62med_cty'"
+putexcel C33 = "`11med_cty'"
+putexcel D33 = "`12med_cty'"
 
 *---------- CREATE PART OF EXHIBIT 3 FOR EXCEL ------------*
 * Only has results from regression. For results from propensity score, see script pscore.do
