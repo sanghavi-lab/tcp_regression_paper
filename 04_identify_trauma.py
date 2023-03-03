@@ -182,61 +182,61 @@ for c in claim_type: # IP or OP
             # Read out data
             hos_df_trauma.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_10_before_drop_duplicates/{c}/{y}/',compression='gzip',engine='fastparquet')
 
-# ########### APPENDIX: Check total number of hospital claims with injury code from 2011-2017 (exclude last 3 months of 2015) ###########
-#
-# # Import modules
-# import pandas as pd
-#
-# # Empty list to store numbers
-# list_num_rows=[]
-#
-# # Define a list for IP or OP
-# claim_type = ['ip','opb']
-#
-# # Define years 11-19 to loop through
-# years=[*range(2011,2020,1)]
-#
-# # Define a list for icd9 vs icd10
-# icd_type = ['9','10']
-#
-# #___ Loop through each year and calculate the number of observations ___#
-# for c in claim_type:
-#
-#     for y in years:
-#
-#         for i in icd_type:
-#
-#             if (i in ['9']) & (y in [*range(2011,2016,1)]): # For ICD9 data
-#
-#                 # Read in data
-#                 df_trauma = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_{i}_before_drop_duplicates/{c}/{y}/',engine='fastparquet',columns=['BENE_ID'])
-#
-#                 # Calculate the number of rows and append to list above
-#                 num_rows = df_trauma.shape[0]
-#                 list_num_rows.append(num_rows)
-#
-#                 # Check
-#                 print(f'{c} {y} icd_{i}: ',num_rows)
-#
-#             elif (i in ['10']) & (y in [*range(2016,2020,1)]): # excludes 2015 icd10
-#
-#                 # Read in data
-#                 df_trauma = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_{i}_before_drop_duplicates/{c}/{y}/',engine='fastparquet',columns=['BENE_ID'])
-#
-#                 # Calculate the number of rows and append to list above
-#                 num_rows = df_trauma.shape[0]
-#                 list_num_rows.append(num_rows)
-#
-#                 # Check
-#                 print(f'{c} {y} icd_{i}: ', num_rows)
-#
-#             else:
-#
-#                 print(f'Data unavailable for {c} {y} icd_{i}')
-#
-#
-# # Print total number of claims (both ip and op) with injury code
-# print('Hospital claims with injury code 2011-2019: ',sum(list_num_rows))
+########### APPENDIX: Check total number of hospital claims with injury code from 2011-2019 (exclude last 3 months of 2015) ###########
+
+# Import modules
+import pandas as pd
+
+# Empty list to store numbers
+list_num_rows=[]
+
+# Define a list for IP or OP
+claim_type = ['ip','opb']
+
+# Define years 11-19 to loop through
+years=[*range(2011,2020,1)]
+
+# Define a list for icd9 vs icd10
+icd_type = ['9','10']
+
+#___ Loop through each year and calculate the number of observations ___#
+for c in claim_type:
+
+    for y in years:
+
+        for i in icd_type:
+
+            if (i in ['9']) & (y in [*range(2011,2016,1)]): # For ICD9 data
+
+                # Read in data
+                df_trauma = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_{i}_before_drop_duplicates/{c}/{y}/',engine='fastparquet',columns=['BENE_ID'])
+
+                # Calculate the number of rows and append to list above
+                num_rows = df_trauma.shape[0]
+                list_num_rows.append(num_rows)
+
+                # Check
+                print(f'{c} {y} icd_{i}: ',num_rows)
+
+            elif (i in ['10']) & (y in [*range(2016,2020,1)]): # excludes 2015 icd10
+
+                # Read in data
+                df_trauma = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/identify_trauma/icd_{i}_before_drop_duplicates/{c}/{y}/',engine='fastparquet',columns=['BENE_ID'])
+
+                # Calculate the number of rows and append to list above
+                num_rows = df_trauma.shape[0]
+                list_num_rows.append(num_rows)
+
+                # Check
+                print(f'{c} {y} icd_{i}: ', num_rows)
+
+            else:
+
+                print(f'Data unavailable for {c} {y} icd_{i}')
+
+
+# Print total number of claims (both ip and op) with injury code
+print('Hospital claims with injury code 2011-2019: ',sum(list_num_rows))
 
 
 

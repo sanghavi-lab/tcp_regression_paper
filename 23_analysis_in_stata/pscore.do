@@ -2,7 +2,7 @@
 * Project: Trauma Center Project (Regression Paper with Pre-Hospital)
 * Author: Jessy Nguyen
 * Last Updated: February 8, 2023
-* Description: Propensity score analysis with overlap weights. Creates a section of exhibit 3.
+* Description: Propensity score analysis with overlap weights. Creates exhibit 5
 *------------------------------------------------------------------------------*
 
 quietly{ /* Suppress outputs */
@@ -92,6 +92,28 @@ replace niss_bands = 5 if niss>49
 label define niss_label 1 "1-15" 2 "16-24" 3 "25-40" 4 "41-49" 5 "50+"
 label values niss_bands niss_label
 
+* Gen indicators for niss categories
+gen n16_24 = 0
+replace n16_24 = 1 if niss_bands == 2
+gen n25_40 = 0
+replace n25_40 = 1 if niss_bands == 3
+gen n41 = 0
+replace n41 = 1 if (niss_bands == 4) | (niss_bands == 5)
+
+* Gen indicators for comorbidity  categories
+gen cs1 = 0
+replace cs1 = 1 if (comorbidityscore<1)
+gen cs1_3 = 0
+replace cs1_3 = 1 if ((comorbid>=1)&(comorbid<4))
+gen cs4 = 0
+replace cs4 = 1 if ((comorbid>=4))
+
+* Gen indicators for num chronic condition categories
+gen cc1_6 = 0
+replace cc1_6 = 1 if (cc_otcc_count<7)
+gen cc7 = 0
+replace cc7 = 1 if (cc_otcc_count>=7)
+
 * Destring and rename variables needed in the model
 destring RTI_RACE_CD, generate(RACE)
 destring SEX_IDENT_CD, generate(SEX)
@@ -167,6 +189,9 @@ tabulate TRAUMA_LEVEL, generate(t) /* This will create the following dummy varia
 * Keep only trauma level 1 and nontrauma centers
 keep if (TRAUMA_LEVEL == 1 | TRAUMA_LEVEL == 6)
 ren t1 treatment
+
+* Keep if hospitals are within 9 mi radius of each other
+keep if choice_ind_mi9 == 1
 
 * Create variable for the log of median household income to account for right skewness
 gen median_hh_inc_ln = ln(m_hh_inc)
@@ -267,14 +292,14 @@ foreach m of local mile_nomile{
                 }
 
                 * Step 1 logit
-                logit outcome_binary i.mile_binary `m'`a'niss1-`m'`a'niss4 `m'`a'riss1-`m'`a'riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
+                asdoc logit outcome_binary i.mile_binary SH_ind EH_ind NH_ind RH_ind `m'`a'niss1-`m'`a'niss4 `m'`a'riss1-`m'`a'riss4 ib2.RACE ib1.SEX c.AGE##c.AGE c.comorbid##c.comorbid c.BLOODPT ///
                 c.mxaisbr_HeadNeck c.mxaisbr_Extremities c.mxaisbr_Chest c.mxaisbr_Abdomen c.maxais i.STATE i.year_fe AMI_EVER_ind ///
                 ALZH_EVER_ind ALZH_DEMEN_EVER_ind ATRIAL_FIB_EVER_ind CATARACT_EVER_ind CHRONICKIDNEY_EVER_ind COPD_EVER_ind CHF_EVER_ind ///
                 DIABETES_EVER_ind GLAUCOMA_EVER_ind ISCHEMICHEART_EVER_ind DEPRESSION_EVER_ind OSTEOPOROSIS_EVER_ind ///
                 RA_OA_EVER_ind STROKE_TIA_EVER_ind CANCER_BREAST_EVER_ind CANCER_COLORECTAL_EVER_ind CANCER_PROSTATE_EVER_ind CANCER_LUNG_EVER_ind ///
                 CANCER_ENDOMETRIAL_EVER_ind ANEMIA_EVER_ind ASTHMA_EVER_ind HYPERL_EVER_ind HYPERP_EVER_ind HYPERT_EVER_ind HYPOTH_EVER_ind ///
                 MULSCL_MEDICARE_EVER_ind OBESITY_MEDICARE_EVER_ind EPILEP_MEDICARE_EVER_ind median_hh_inc_ln pvrty fem_cty eld_cty ///
-                ib0.metro_micro_cnty cllge gen_md med_cty full_dual_ind SH_ind EH_ind NH_ind RH_ind /* can't add in amb or treatment since the outcomes are both amb and treatment */
+                ib0.metro_micro_cnty cllge gen_md med_cty full_dual_ind, save(appendix_logit_table_`a'_`m') replace /* can't add in amb or treatment since the outcomes are both amb and treatment */
             }
         }
 
@@ -403,7 +428,7 @@ foreach m of local mile_nomile{
         if inlist("`m'","mile"){ /* Check balance only for model with mile binary but the model w/o mile variable was also balanced */
 
             * Create list named covariates
-            local covariates niss riss AGE comorbid female white black other_n asian_pi hispanic BLOODPT m_hh_inc pvrty fem_cty eld_cty metro cllge gen_md med_cty cc_cnt
+            local covariates niss riss AGE comorbid female white black other_n asian_pi hispanic BLOODPT m_hh_inc pvrty fem_cty eld_cty metro cllge gen_md med_cty cc_cnt n16_24 n25_40 n41 cs1 cs1_3 cs4 cc1_6 cc7 MILES
 
             * Create macro to loop (i.e. control vs treatment group)
             local group_type 0 1
@@ -439,14 +464,45 @@ foreach m of local mile_nomile{
                     }
 
                     * Save the means of the treatment and control groups to put into excel sheet
-                    if inlist("`c'","female","white", "black", "other_n", "asian_pi", "hispanic")|inlist("`c'","pvrty", "fem_cty", "eld_cty", "metro", "cllge", "gen_md", "med_cty"){ /* use conditional function to convert these to percents. Also need to use two inlist functions separated with "|" to bypass error "Expression too long" */
+                    if inlist("`c'","female","white", "black", "other_n", "asian_pi", "hispanic")|inlist("`c'","pvrty", "fem_cty", "eld_cty", "metro", "cllge", "gen_md", "med_cty")|inlist("`c'","n16_24", "n25_40", "n41", "cs1", "cs1_3", "cs4", "cc1_6")|inlist("`c'","cc7"){ /* use conditional function to convert these to percents. Also need to use two inlist functions separated with "|" to bypass error "Expression too long" */
                         local `a'`c'`b'_m = string(`r(mean)'*100,"%9.1f") /* Save macro for treatment group's mean and keep decimal at tenth place. "tn" is treatment group's mean before weighting. Multiply by 100 to convert to percent */
                     }
                     else{ /* While the above requires conversion to percents, other variables like niss or AGE do not */
                         local `a'`c'`b'_m = string(`r(mean)',"%9.1f") /* Save macro for treatment group's mean and keep decimal at tenth place. "tn" is treatment group's mean before weighting. Multiply by 100 to convert to percent */
                     }
+
+                    if inlist("`a'","nt_als_v_bls", "l1_als_v_bls", "als_l1_v_nt", "bls_l1_v_nt"){
+
+                        *___ STANDARDIZED DIFFERENCE FOR DICHOTOMOUS VARIABLES ___*
+                        if inlist("`c'", "female", "white", "black", "other_n", "asian_pi", "hispanic")|inlist("`c'", "metro")|inlist("`c'","n16_24", "n25_40", "n41", "cs1", "cs1_3", "cs4", "cc1_6", "cc7"){
+                            summarize `c' [aw=weights] if outcome_binary == 1     /* Apply weights for treatment group */
+                            local `a'`c'ppt = r(mean)                      /* Obtain weighted probability from treatment */
+                            summarize `c' [aw=weights] if outcome_binary == 0     /* Apply weights for control group */
+                            local `a'`c'ppc = r(mean)                      /* Obtain weighted probability from control */
+
+                            * Calculate STD DIFF
+                            local `a'`c'SDA = string((``a'`c'ppt' - ``a'`c'ppc')/sqrt(((``a'`c'ppt' * (1 - ``a'`c'ppt')) + (``a'`c'ppc' * (1 - ``a'`c'ppc')))/2),"%9.2f")
+                        }
+
+                        *___STANDARDIZED DIFFERENCE FOR CONTINUOUS VARIABLES___*
+                        else{
+                            summarize `c' [aw=weights] if outcome_binary == 1     /* Apply weights for treatment group */
+                            local `a'`c'mmt = r(mean)                      /* Obtain weighted means from treatment */
+                            local `a'`c'sst = r(sd)                        /* Obtain weighted standard error from treatment */
+                            summarize `c' [aw=weights] if outcome_binary == 0     /* Apply weights for control group */
+                            local `a'`c'mmc = r(mean)                      /* Obtain weighted means from treatment */
+                            local `a'`c'ssc = r(sd)                        /* Obtain weighted standard error from treatment */
+
+                            * Calculate STD DIFF
+                            local `a'`c'SDA = string((``a'`c'mmt' - ``a'`c'mmc')/sqrt(( (``a'`c'sst')^2 + (``a'`c'ssc')^2 )/2),"%9.2f")
+                        }
+
+                    }
+
                 }
+
             }
+
         }
 
         *____________ Step 5: Run analysis without weights [unadjusted] and with weights [adjusted] ________________*
@@ -515,7 +571,7 @@ foreach m of local mile_nomile{
 
 *---------- CREATE BALANCE TABLE FOR EXCEL (BEFORE AND AFTER WEIGHTING) ------------*
 
-local diff_group nt_als_v_bls l1_als_v_bls als_l1_v_nt bls_l1_v_nt l1_v_nt als_v_bls
+local diff_group nt_als_v_bls l1_als_v_bls als_l1_v_nt bls_l1_v_nt
 
 foreach a of local diff_group{
 
@@ -532,65 +588,153 @@ foreach a of local diff_group{
     putexcel A1 = "``a'AGE0_m'"
     putexcel B1 = "``a'AGE1_m'"
 
+    putexcel C1 = "``a'AGESDA'"  /*std diff*/
+
     putexcel A2 = "``a'female0_m'"
     putexcel B2 = "``a'female1_m'"
+
+    putexcel C2 = "``a'femaleSDA'"  /*std diff*/
 
     putexcel A4 = "``a'white0_m'"
     putexcel B4 = "``a'white1_m'"
 
+    putexcel C4 = "``a'whiteSDA'"  /*std diff*/
+
     putexcel A5 = "``a'black0_m'"
     putexcel B5 = "``a'black1_m'"
+
+    putexcel C5 = "``a'blackSDA'"  /*std diff*/
 
     putexcel A6 = "``a'other_n0_m'"
     putexcel B6 = "``a'other_n1_m'"
 
+    putexcel C6 = "``a'other_nSDA'"  /*std diff*/
+
     putexcel A7 = "``a'asian_pi0_m'"
     putexcel B7 = "``a'asian_pi1_m'"
+
+    putexcel C7 = "``a'asian_piSDA'"  /*std diff*/
 
     putexcel A8 = "``a'hispanic0_m'"
     putexcel B8 = "``a'hispanic1_m'"
 
+    putexcel C8 = "``a'hispanicSDA'"  /*std diff*/
+
     putexcel A9 = "``a'cc_cnt0_m'"
     putexcel B9 = "``a'cc_cnt1_m'"
 
-    putexcel A10 = "``a'comorbid0_m'"
-    putexcel B10 = "``a'comorbid1_m'"
+    putexcel C9 = "``a'cc_cntSDA'"  /*std diff*/
 
-    putexcel A11 = "``a'niss0_m'"
-    putexcel B11 = "``a'niss1_m'"
+    putexcel A11 = "``a'cc1_60_m'"
+    putexcel B11 = "``a'cc1_61_m'"
 
-    putexcel A12 = "``a'riss0_m'"
-    putexcel B12 = "``a'riss1_m'"
+    putexcel C11 = "``a'cc1_6SDA'"  /*std diff*/
 
-    putexcel A13 = "``a'BLOODPT0_m'"
-    putexcel B13 = "``a'BLOODPT1_m'"
+    putexcel A12 = "``a'cc70_m'"
+    putexcel B12 = "``a'cc71_m'"
 
-    putexcel A14 = "``a'm_hh_inc0_m'"
-    putexcel B14 = "``a'm_hh_inc1_m'"
+    putexcel C12 = "``a'cc7SDA'"  /*std diff*/
 
-    putexcel A16 = "``a'pvrty0_m'"
-    putexcel B16 = "``a'pvrty1_m'"
+    putexcel A13 = "``a'comorbid0_m'"
+    putexcel B13 = "``a'comorbid1_m'"
 
-    putexcel A17 = "``a'fem_cty0_m'"
-    putexcel B17 = "``a'fem_cty1_m'"
+    putexcel C13 = "``a'comorbidSDA'"  /*std diff*/
 
-    putexcel A18 = "``a'eld_cty0_m'"
-    putexcel B18 = "``a'eld_cty1_m'"
+    putexcel A15 = "``a'cs10_m'"
+    putexcel B15 = "``a'cs11_m'"
 
-    putexcel A19 = "``a'metro0_m'"
-    putexcel B19 = "``a'metro1_m'"
+    putexcel C15 = "``a'cs1SDA'"  /*std diff*/
 
-    putexcel A20 = "``a'cllge0_m'"
-    putexcel B20 = "``a'cllge1_m'"
+    putexcel A16 = "``a'cs1_30_m'"
+    putexcel B16 = "``a'cs1_31_m'"
 
-    putexcel A21 = "``a'gen_md0_m'"
-    putexcel B21 = "``a'gen_md1_m'"
+    putexcel C16 = "``a'cs1_3SDA'"  /*std diff*/
 
-    putexcel A22 = "``a'med_cty0_m'"
-    putexcel B22 = "``a'med_cty1_m'"
+    putexcel A17 = "``a'cs40_m'"
+    putexcel B17 = "``a'cs41_m'"
 
-    putexcel A24 = "``a'0_n'"
-    putexcel B24 = "``a'1_n'"
+    putexcel C17 = "``a'cs4SDA'"  /*std diff*/
+
+    putexcel A18 = "``a'niss0_m'"
+    putexcel B18 = "``a'niss1_m'"
+
+    putexcel C118 = "``a'nissSDA'"  /*std diff*/
+
+    putexcel A20 = "``a'n16_240_m'"
+    putexcel B20 = "``a'n16_241_m'"
+
+    putexcel C20 = "``a'n16_24SDA'"  /*std diff*/
+
+    putexcel A21 = "``a'n25_400_m'"
+    putexcel B21 = "``a'n25_401_m'"
+
+    putexcel C21 = "``a'n25_40SDA'"  /*std diff*/
+
+    putexcel A22 = "``a'n410_m'"
+    putexcel B22 = "``a'n411_m'"
+
+    putexcel C22 = "``a'n41SDA'"  /*std diff*/
+
+    putexcel A23 = "``a'riss0_m'"
+    putexcel B23 = "``a'riss1_m'"
+
+    putexcel C23 = "``a'rissSDA'"  /*std diff*/
+
+    putexcel A24 = "``a'BLOODPT0_m'"
+    putexcel B24 = "``a'BLOODPT1_m'"
+
+    putexcel C24 = "``a'BLOODPTSDA'"  /*std diff*/
+
+    putexcel A25 = "``a'MILES0_m'"
+    putexcel B25 = "``a'MILES1_m'"
+
+    putexcel C25 = "``a'MILESSDA'"  /*std diff*/
+
+    putexcel A26 = "``a'm_hh_inc0_m'"
+    putexcel B26 = "``a'm_hh_inc1_m'"
+
+    putexcel C26 = "``a'm_hh_incSDA'"  /*std diff*/
+
+    putexcel A28 = "``a'pvrty0_m'"
+    putexcel B28 = "``a'pvrty1_m'"
+
+    putexcel C28 = "``a'pvrtySDA'"  /*std diff*/
+
+    putexcel A29 = "``a'fem_cty0_m'"
+    putexcel B29 = "``a'fem_cty1_m'"
+
+    putexcel C29 = "``a'fem_ctySDA'"  /*std diff*/
+
+    putexcel A30 = "``a'eld_cty0_m'"
+    putexcel B30 = "``a'eld_cty1_m'"
+
+    putexcel C30 = "``a'eld_ctySDA'"  /*std diff*/
+
+    putexcel A31 = "``a'metro0_m'"
+    putexcel B31 = "``a'metro1_m'"
+
+    putexcel C31 = "``a'metroSDA'"  /*std diff*/
+
+    putexcel A32 = "``a'cllge0_m'"
+    putexcel B32 = "``a'cllge1_m'"
+
+    putexcel C32 = "``a'cllgeSDA'"  /*std diff*/
+
+    putexcel A33 = "``a'gen_md0_m'"
+    putexcel B33 = "``a'gen_md1_m'"
+
+    putexcel C33 = "``a'gen_mdSDA'"  /*std diff*/
+
+    putexcel A34 = "``a'med_cty0_m'"
+    putexcel B34 = "``a'med_cty1_m'"
+
+    putexcel C34 = "``a'med_ctySDA'"  /*std diff*/
+
+    local per_treatment = string((``a'1_n'/(``a'0_n'+``a'1_n'))*100,"%9.0f")
+    local per_control = string((``a'0_n'/(``a'0_n'+``a'1_n'))*100,"%9.0f")
+
+    putexcel A36 = "``a'0_n' (`per_control'%)"
+    putexcel B36 = "``a'1_n' (`per_treatment'%)"
 
 }
 
@@ -854,6 +998,7 @@ putexcel K8 = "`bls_l1_v_nt_cu'"
 
 * scp jessyjkn@phs-rs24.bsd.uchicago.edu:/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/tab_char_no_labels_pscore.xlsx /Users/jessyjkn/Desktop/Job/Data/trauma_center_project/regression_results
 
-
+* for appendix
+* scp jessyjkn@phs-rs24.bsd.uchicago.edu:/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/appendix_logit_table_l1_als_v_bls_mile.doc /Users/jessyjkn/Desktop/Job/Data/trauma_center_project/regression_results/appendix/
 
 }

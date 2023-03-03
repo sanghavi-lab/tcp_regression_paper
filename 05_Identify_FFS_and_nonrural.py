@@ -180,35 +180,35 @@ for c in claim_type:
         # Read out data in parquet
         not_rural_df.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}',compression='gzip',engine='fastparquet')
 
-# ################ APPENDIX: Check total number of hospital claims that are NOT from rural counties #######################
-#
-# # Import modules
-# import pandas as pd
-#
-# # Empty list to store numbers
-# list_num_rows=[]
-#
-# # Define a list for IP or OP
-# claim_type = ['ip','opb']
-#
-# # Define years 11-17 to loop through
-# years=[*range(2011,2020,1)]
-#
-# #___ Loop through each year and calculate the number of observations ___#
-# for c in claim_type:
-#
-#     for y in years:
-#
-#         # Read in data. Note, I already excluded the last three months of 2015.
-#         df_nonrural = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}',engine='fastparquet',columns=['BENE_ID'])
-#
-#         # Calculate the number of rows and append to list above
-#         num_rows = df_nonrural.shape[0]
-#         list_num_rows.append(num_rows)
-#
-#         # Check
-#         print(f'{c} {y}: ',num_rows)
-#
-#
-# # Print total number of claims (both ip and op) with injury code
-# print('Claims without rural (includes 2015 icd10 data) (to find the number of rurals, \nI need to subtract this number from Hospital claims with \ninjury code box: ',sum(list_num_rows))
+################ APPENDIX: Check total number of hospital claims that are NOT from rural counties #######################
+
+# Import modules
+import pandas as pd
+
+# Empty list to store numbers
+list_num_rows=[]
+
+# Define a list for IP or OP
+claim_type = ['ip','opb']
+
+# Define years 11-19 to loop through
+years=[*range(2011,2020,1)]
+
+#___ Loop through each year and calculate the number of observations ___#
+for c in claim_type:
+
+    for y in years:
+
+        # Read in data. Note, I already excluded the last three months of 2015.
+        df_nonrural = pd.read_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/nonrural/{c}/{y}',engine='fastparquet',columns=['BENE_ID'])
+
+        # Calculate the number of rows and append to list above
+        num_rows = df_nonrural.shape[0]
+        list_num_rows.append(num_rows)
+
+        # Check
+        print(f'{c} {y}: ',num_rows)
+
+
+# Print total number of claims (both ip and op) with injury code
+print('Claims without rural (includes 2015 icd10 data) (to find the number of rurals, \nI need to subtract this number from Hospital claims with \ninjury code box: ',sum(list_num_rows))

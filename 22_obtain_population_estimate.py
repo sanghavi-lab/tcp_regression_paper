@@ -18,6 +18,9 @@ import numpy as np
 final_matched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_matched_allyears_w_hos_qual_n_choice_anltcl_1nt.dta')
 final_unmatched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_unmatched_allyears_w_hos_qual_n_choice_anltcl_1nt.dta')
 
+print(list(final_matched_claims_allyears.columns))
+print(list(final_unmatched_claims_allyears.columns))
+
 # Drop trauma level column from final_unmatched_claims_allyears df
 final_unmatched_claims_allyears = final_unmatched_claims_allyears.drop(['TRAUMA_LEVEL'],axis=1)
 

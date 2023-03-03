@@ -23,7 +23,6 @@ client = Client('127.0.0.1:3500')
 
 # Specify Years
 years=[*range(2011,2020)]
-years = [2016,2017,2018,2019] # starting at 2016 to ensure that i used gemmin
 
 # Define columns from icdpicr output
 icdpicr_col = ['UNIQUE_ID', 'mxaisbr_HeadNeck', 'mxaisbr_Face', 'mxaisbr_Extremities', 'mxaisbr_Chest', 'mxaisbr_Abdomen',
@@ -74,7 +73,7 @@ for y in years:
     # Read out
     df_merge.to_parquet(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims/all_hos_claims/{y}_major_trauma',engine='fastparquet',compression='gzip')
 
-# # APPENDIX: Print total number of claims that are not major trauma
-# print('Not major trauma: ',sum(num_rows_not_major_trauma))
+# APPENDIX: Print total number of claims that are not major trauma
+print('Not major trauma: ',sum(num_rows_not_major_trauma))
 
 

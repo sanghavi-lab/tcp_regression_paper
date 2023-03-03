@@ -14,81 +14,81 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-######################################### REDUCE DF FROM CARTESIAN MERGE ###############################################
-# Data created from script 20 is large. This section will take that dataset and reduce it. The resulting subset will be used
-# to help identify hospitals in "choice" vs "no choice"
+# ######################################### REDUCE DF FROM CARTESIAN MERGE ###############################################
+# # Data created from script 20 is large. This section will take that dataset and reduce it. The resulting subset will be used
+# # to help identify hospitals in "choice" vs "no choice"
+#
+# #____ For Choice: keep if less than 30 miles ___#
+#
+# # Define columns
+# columns = ['MCRNUM','TRAUMA_LEVEL','MCRNUM_b','TRAUMA_LEVEL_b','distance']
+#
+# # Read in dataset
+# hos_w_distance = pd.read_csv('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_2017.csv',dtype=str,usecols=columns) # use dtype=str because some columns have mix dtypes
+#
+# # Convert to float
+# hos_w_distance['distance'] = hos_w_distance['distance'].astype(float)
+#
+# # Keep if distance is less than 30 miles and the two hospitals are different
+# hos_w_distance = hos_w_distance[(hos_w_distance['distance']<=30)&(hos_w_distance['MCRNUM']!=hos_w_distance['MCRNUM_b'])]
+#
+# # For duplicated provider ID, sort by trauma level so that higher trauma level is at the top
+# hos_w_distance = hos_w_distance.sort_values(by=['TRAUMA_LEVEL'], ascending=True)
+#
+# # Drop duplicates and keep the first one (i.e. keep the higher trauma level. Reasoning: I manually search some of them and the higher level is the most up-to-date)
+# hos_w_distance = hos_w_distance.drop_duplicates(subset=['MCRNUM','MCRNUM_b'],keep='first') # subset on both mcrnum and mcrnum_b to keep the first and second destination. If I only subset on mcrnum, then I would lose all of the second destinations.
+#
+# # Read out
+# hos_w_distance.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_subset.csv',index=False)
+#
+# #____ For No Choice: keep if different hospital types ___#
+#
+# # Define columns
+# columns = ['MCRNUM','distance','MCRNUM_b']
+#
+# # Read in same dataset as above
+# hos_w_distance = pd.read_csv('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_2017.csv',dtype=str,usecols=columns) # use dtype=str because some columns have mix dtypes
+#
+# # Convert to float
+# hos_w_distance['distance'] = hos_w_distance['distance'].astype(float)
+#
+# # Keep if the two trauma levels are different
+# hos_w_distance = hos_w_distance[(hos_w_distance['MCRNUM']!=hos_w_distance['MCRNUM_b'])]
+#
+# # Read out
+# hos_w_distance.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_subset_nochoice.csv',index=False)
 
-#____ For Choice: keep if less than 30 miles ___#
-
-# Define columns
-columns = ['MCRNUM','TRAUMA_LEVEL','MCRNUM_b','TRAUMA_LEVEL_b','distance']
-
-# Read in dataset
-hos_w_distance = pd.read_csv('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_2017.csv',dtype=str,usecols=columns) # use dtype=str because some columns have mix dtypes
-
-# Convert to float
-hos_w_distance['distance'] = hos_w_distance['distance'].astype(float)
-
-# Keep if distance is less than 30 miles and the two hospitals are different
-hos_w_distance = hos_w_distance[(hos_w_distance['distance']<=30)&(hos_w_distance['MCRNUM']!=hos_w_distance['MCRNUM_b'])]
-
-# For duplicated provider ID, sort by trauma level so that higher trauma level is at the top
-hos_w_distance = hos_w_distance.sort_values(by=['TRAUMA_LEVEL'], ascending=True)
-
-# Drop duplicates and keep the first one (i.e. keep the higher trauma level. Reasoning: I manually search some of them and the higher level is the most up-to-date)
-hos_w_distance = hos_w_distance.drop_duplicates(subset=['MCRNUM','MCRNUM_b'],keep='first') # subset on both mcrnum and mcrnum_b to keep the first and second destination. If I only subset on mcrnum, then I would lose all of the second destinations.
-
-# Read out
-hos_w_distance.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_subset.csv',index=False)
-
-#____ For No Choice: keep if different hospital types ___#
-
-# Define columns
-columns = ['MCRNUM','distance','MCRNUM_b']
-
-# Read in same dataset as above
-hos_w_distance = pd.read_csv('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_2017.csv',dtype=str,usecols=columns) # use dtype=str because some columns have mix dtypes
-
-# Convert to float
-hos_w_distance['distance'] = hos_w_distance['distance'].astype(float)
-
-# Keep if the two trauma levels are different
-hos_w_distance = hos_w_distance[(hos_w_distance['MCRNUM']!=hos_w_distance['MCRNUM_b'])]
-
-# Read out
-hos_w_distance.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_subset_nochoice.csv',index=False)
-
-#################################### KEEP ONLY HOSPITALS FROM MY ANALYTICAL SAMPLE #####################################
-# Goal is to keep hospitals from hos_distance_subset (choice only) that are present from my analytical sample.
-
-# Read in analytical sample
-final_matched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_matched_claims_allyears_w_hos_qual.dta',columns=['PRVDR_NUM','less_than_90_bene_served'])
-final_unmatched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_unmatched_claims_allyears_w_hos_qual.dta',columns=['PRVDR_NUM','less_than_90_bene_served'])
-
-# Keep on those that serve 90 plus major trauma benes in a year
-final_matched_claims_allyears=final_matched_claims_allyears[final_matched_claims_allyears['less_than_90_bene_served']!=1]
-final_unmatched_claims_allyears=final_unmatched_claims_allyears[final_unmatched_claims_allyears['less_than_90_bene_served']!=1]
-
-# Concat
-concat_df = pd.concat([final_matched_claims_allyears,final_unmatched_claims_allyears],axis=0)
-
-# Put provider id in list
-list_analytical = concat_df['PRVDR_NUM'].to_list()
-
-# Recover memory
-del final_unmatched_claims_allyears
-del final_matched_claims_allyears
-del concat_df
-
-# Read in hospital with distance information data
-hos_w_distance_30mi = pd.read_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_subset.csv',dtype=str)
-    # Note that this df only contains pairs of hospitals that are within 30 miles of each other
-
-# Keep if in hospital is from analytical sample
-hos_w_distance_analytical_only = hos_w_distance_30mi[(hos_w_distance_30mi['MCRNUM'].isin(list_analytical))&(hos_w_distance_30mi['MCRNUM_b'].isin(list_analytical))]
-
-# Read out
-hos_w_distance_analytical_only.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_analytical_only.csv',index=False)
+# #################################### KEEP ONLY HOSPITALS FROM MY ANALYTICAL SAMPLE #####################################
+# # Goal is to keep hospitals from hos_distance_subset (choice only) that are present from my analytical sample.
+#
+# # Read in analytical sample
+# final_matched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_matched_claims_allyears_w_hos_qual.dta',columns=['PRVDR_NUM','less_than_90_bene_served'])
+# final_unmatched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_unmatched_claims_allyears_w_hos_qual.dta',columns=['PRVDR_NUM','less_than_90_bene_served'])
+#
+# # Keep on those that serve 90 plus major trauma benes in a year
+# final_matched_claims_allyears=final_matched_claims_allyears[final_matched_claims_allyears['less_than_90_bene_served']!=1]
+# final_unmatched_claims_allyears=final_unmatched_claims_allyears[final_unmatched_claims_allyears['less_than_90_bene_served']!=1]
+#
+# # Concat
+# concat_df = pd.concat([final_matched_claims_allyears,final_unmatched_claims_allyears],axis=0)
+#
+# # Put provider id in list
+# list_analytical = concat_df['PRVDR_NUM'].to_list()
+#
+# # Recover memory
+# del final_unmatched_claims_allyears
+# del final_matched_claims_allyears
+# del concat_df
+#
+# # Read in hospital with distance information data
+# hos_w_distance_30mi = pd.read_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_subset.csv',dtype=str)
+#     # Note that this df only contains pairs of hospitals that are within 30 miles of each other
+#
+# # Keep if in hospital is from analytical sample
+# hos_w_distance_analytical_only = hos_w_distance_30mi[(hos_w_distance_30mi['MCRNUM'].isin(list_analytical))&(hos_w_distance_30mi['MCRNUM_b'].isin(list_analytical))]
+#
+# # Read out
+# hos_w_distance_analytical_only.to_csv(f'/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/hos_w_dist_long_lat/hos_distance_analytical_only.csv',index=False)
 
 
 ##################################### CREATE DATASET WITH VARYING MILE RADIUS ##########################################
@@ -127,7 +127,8 @@ final_matched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy
 final_unmatched_claims_allyears = pd.read_stata('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project_all_hos_claims_for_reg/merged_ats_claims_for_stata/final_unmatched_claims_allyears_w_hos_qual.dta')
 
 # Create list
-miles_list = [x * 0.5 for x in range(2, 20)]
+# miles_list = [x * 0.5 for x in range(2, 21)]
+miles_list = [x for x in range(7, 31)]
 
 for m in miles_list:
 
@@ -135,7 +136,7 @@ for m in miles_list:
     # Keep if distance is less than m miles, the two trauma levels are different, and it's only lvl 1 and non-trauma
     subset_merge_df = merge_df[(merge_df['distance']<=m)&(merge_df['TRAUMA_LEVEL']!=merge_df['TRAUMA_LEVEL_b'])&(merge_df['TRAUMA_LEVEL'].isin(['1','6']))&(merge_df['TRAUMA_LEVEL_b'].isin(['1','6']))] # 6 is nontrauma
 
-    # Keep only relevant columns. Now this DF contains claims that have another hospital within m miles.
+    # Keep only relevant columns. Now this DF contains claims th2at have another hospital within m miles.
     subset_merge_df = subset_merge_df[['patid']]
 
     # Drop duplicated patid
