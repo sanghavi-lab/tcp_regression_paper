@@ -53,7 +53,7 @@ change_lvl_overtime_dict = {}
 #------#
 
 # Specify years
-ats_aha_years = [*range(2012,2021)] # We do not have 2012 or 2018 ATS data. Instead we will use 2013 and 2019 as replacements (see below when reading in data)
+ats_aha_years = [*range(2012,2021)] # We do not have 2012 or 2018 ATS data. Instead we will use 2013 and 2019 as replacements (see below when reading in data). Also don't have xwalk 2020...
 
 for y in ats_aha_years:
 
