@@ -143,7 +143,7 @@ plt.savefig('/mnt/labshares/sanghavi-lab/Jessy/data/trauma_center_project/figure
 # Close map
 plt.close()
 
-########################################### CREATE MAP FOR ILLINOIS ####################################################
+########################################### CREATE MAP FOR AK/HI ####################################################
 
 # Specify states
 states=['AK','HI']
