@@ -236,11 +236,13 @@ foreach a of local amb_type{
             else{ /* While the above requires conversion to percents, other variables like niss or AGE do not */
                 *local `c'_p = string(`r(p)',"%3.2f")
                 local `h'`a'`c' = string(`r(mean)',"%9.1f")
+                local `h'`a'`c'SD = string(`r(sd)',"%9.1f")
             }
 
         }
     }
 }
+
 
 * Retore original data
 restore
@@ -583,15 +585,15 @@ local per_als_in_nt = string((`62'/(`61'+`62'))*100,"%9.0f")
 local per_bls_in_t1 = string((`11'/(`11'+`12'))*100,"%9.0f")
 local per_als_in_t1 = string((`12'/(`11'+`12'))*100,"%9.0f")
 
-putexcel F1 = "`61' (`per_bls_in_nt'%)"
-putexcel G1 = "`62' (`per_als_in_nt'%)"
-putexcel H1 = "`11' (`per_bls_in_t1'%)"
-putexcel I1 = "`12' (`per_als_in_t1'%)"
+putexcel F1 = "`61' [`per_bls_in_nt'%]"
+putexcel G1 = "`62' [`per_als_in_nt'%]"
+putexcel H1 = "`11' [`per_bls_in_t1'%]"
+putexcel I1 = "`12' [`per_als_in_t1'%]"
 
-putexcel A1 = "`61AGE'"
-putexcel B1 = "`62AGE'"
-putexcel C1 = "`11AGE'"
-putexcel D1 = "`12AGE'"
+putexcel A1 = "`61AGE' (`61AGESD')"
+putexcel B1 = "`62AGE' (`62AGESD')"
+putexcel C1 = "`11AGE' (`11AGESD')"
+putexcel D1 = "`12AGE' (`12AGESD')"
 
 putexcel A2 = "`61female'"
 putexcel B2 = "`62female'"
@@ -623,10 +625,10 @@ putexcel B8 = "`62hispanic'"
 putexcel C8 = "`11hispanic'"
 putexcel D8 = "`12hispanic'"
 
-putexcel A9 = "`61cc_cnt'"
-putexcel B9 = "`62cc_cnt'"
-putexcel C9 = "`11cc_cnt'"
-putexcel D9 = "`12cc_cnt'"
+putexcel A9 = "`61cc_cnt' (`61cc_cntSD')"
+putexcel B9 = "`62cc_cnt' (`62cc_cntSD')"
+putexcel C9 = "`11cc_cnt' (`11cc_cntSD')"
+putexcel D9 = "`12cc_cnt' (`12cc_cntSD')"
 
 putexcel A11 = "`61cc1_6'"
 putexcel B11 = "`62cc1_6'"
@@ -638,10 +640,10 @@ putexcel B12 = "`62cc7'"
 putexcel C12 = "`11cc7'"
 putexcel D12 = "`12cc7'"
 
-putexcel A13 = "`61comorbid'"
-putexcel B13 = "`62comorbid'"
-putexcel C13 = "`11comorbid'"
-putexcel D13 = "`12comorbid'"
+putexcel A13 = "`61comorbid' (`61comorbidSD')"
+putexcel B13 = "`62comorbid' (`62comorbidSD')"
+putexcel C13 = "`11comorbid' (`11comorbidSD')"
+putexcel D13 = "`12comorbid' (`12comorbidSD')"
 
 putexcel A15 = "`61cs1'"
 putexcel B15 = "`62cs1'"
@@ -658,10 +660,10 @@ putexcel B17 = "`62cs4'"
 putexcel C17 = "`11cs4'"
 putexcel D17 = "`12cs4'"
 
-putexcel A18 = "`61niss'"
-putexcel B18 = "`62niss'"
-putexcel C18 = "`11niss'"
-putexcel D18 = "`12niss'"
+putexcel A18 = "`61niss' (`61nissSD')"
+putexcel B18 = "`62niss' (`62nissSD')"
+putexcel C18 = "`11niss' (`11nissSD')"
+putexcel D18 = "`12niss' (`12nissSD')"
 
 putexcel A20 = "`61n16_24'"
 putexcel B20 = "`62n16_24'"
@@ -678,25 +680,25 @@ putexcel B22 = "`62n41'"
 putexcel C22 = "`11n41'"
 putexcel D22 = "`12n41'"
 
-putexcel A23 = "`61riss'"
-putexcel B23 = "`62riss'"
-putexcel C23 = "`11riss'"
-putexcel D23 = "`12riss'"
+putexcel A23 = "`61riss' (`61rissSD')"
+putexcel B23 = "`62riss' (`62rissSD')"
+putexcel C23 = "`11riss' (`11rissSD')"
+putexcel D23 = "`12riss' (`12rissSD')"
 
-putexcel A24 = "`61BLOODPT'"
-putexcel B24 = "`62BLOODPT'"
-putexcel C24 = "`11BLOODPT'"
-putexcel D24 = "`12BLOODPT'"
+putexcel A24 = "`61BLOODPT' (`61BLOODPTSD')"
+putexcel B24 = "`62BLOODPT' (`62BLOODPTSD')"
+putexcel C24 = "`11BLOODPT' (`11BLOODPTSD')"
+putexcel D24 = "`12BLOODPT' (`12BLOODPTSD')"
 
-putexcel A25 = "`61MILES'"
-putexcel B25 = "`62MILES'"
-putexcel C25 = "`11MILES'"
-putexcel D25 = "`12MILES'"
+putexcel A25 = "`61MILES' (`61MILESSD')"
+putexcel B25 = "`62MILES' (`62MILESSD')"
+putexcel C25 = "`11MILES' (`11MILESSD')"
+putexcel D25 = "`12MILES' (`12MILESSD')"
 
-putexcel A26 = "`61m_hh_inc'"
-putexcel B26 = "`62m_hh_inc'"
-putexcel C26 = "`11m_hh_inc'"
-putexcel D26 = "`12m_hh_inc'"
+putexcel A26 = "`61m_hh_inc' (`61m_hh_incSD')"
+putexcel B26 = "`62m_hh_inc' (`62m_hh_incSD')"
+putexcel C26 = "`11m_hh_inc' (`11m_hh_incSD')"
+putexcel D26 = "`12m_hh_inc' (`12m_hh_incSD')"
 
 putexcel A28 = "`61pvrty'"
 putexcel B28 = "`62pvrty'"
